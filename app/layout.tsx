@@ -18,7 +18,6 @@ export const metadata: Metadata = {
         icon: "/logo.svg",
         apple: "/logo.svg",
     },
-    themeColor: "#000000",
 };
 
 export const viewport: Viewport = {
