@@ -1,0 +1,105 @@
+"use client";
+
+import Navbar from "@/components/Navbar";
+import { motion } from "framer-motion";
+import { Crown, Menu, User, Settings, LogOut } from "lucide-react";
+import { useTheme } from "@/components/ThemeProvider";
+import Link from "next/link";
+import { useState } from "react";
+
+export default function Home() {
+    const { theme } = useTheme();
+    const [showMenu, setShowMenu] = useState(false);
+
+    // Datos simulados por ahora
+    const lastEvent = { title: "Cervezas en el Centro", date: "Hoy 20:30", location: "Plaza Mayor" };
+
+    return (
+        <div
+            className="pb-24 min-h-screen bg-fixed bg-cover bg-center transition-all duration-500"
+            style={{
+                backgroundImage: theme.backgrounds.home
+                    ? `url('${theme.backgrounds.home}')`
+                    : "url('https://images.unsplash.com/photo-1512354739413-1b45788c6b9e?q=80&w=1000&auto=format&fit=crop')"
+            }}
+        >
+            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+
+            {/* Menú Desplegable Overlay */}
+            {showMenu && (
+                <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-xl p-6 flex flex-col justify-center space-y-6 animate-in fade-in zoom-in-95 duration-200">
+                    <button onClick={() => setShowMenu(false)} className="absolute top-6 right-6 text-white p-2">
+                        ✕ CERRAR
+                    </button>
+
+                    <h2 className="text-4xl font-graffiti text-primary text-center mb-8 rotate-[-3deg]">Menú</h2>
+
+                    <Link href="/profile" onClick={() => setShowMenu(false)}>
+                        <div className="bg-white/10 p-4 rounded-xl flex items-center gap-4 text-white hover:bg-primary hover:text-black transition-all transform hover:scale-105">
+                            <User className="w-8 h-8" />
+                            <span className="font-urban text-xl font-bold">Ver Perfil</span>
+                        </div>
+                    </Link>
+
+                    <button onClick={() => alert("Próximamente: Conectar Google")} className="bg-white/10 p-4 rounded-xl flex items-center gap-4 text-white hover:bg-white/20 transition-all text-left">
+                        <span className="text-2xl">⚡</span>
+                        <span className="font-urban text-xl font-bold">Iniciar con Google</span>
+                    </button>
+
+                    <Link href="/admin" onClick={() => setShowMenu(false)}>
+                        <div className="bg-white/5 p-4 rounded-xl flex items-center gap-4 text-gray-500 hover:text-white transition-colors">
+                            <Settings className="w-8 h-8" />
+                            <span className="font-urban text-xl font-bold">Configuración (Admin)</span>
+                        </div>
+                    </Link>
+                </div>
+            )}
+
+            <div className="relative z-10 p-6 space-y-8">
+                {/* Header */}
+                <header className="flex justify-between items-center">
+                    <div>
+                        <h1 className="text-3xl font-graffiti text-primary">La Peñada</h1>
+                        <p className="text-gray-400 text-sm font-urban">Bienvenido, <span className="text-white font-bold">Kike</span></p>
+                    </div>
+                    <button
+                        onClick={() => setShowMenu(true)}
+                        className="bg-white/10 p-2 rounded-full border border-white/20 text-white hover:bg-white/20 hover:scale-110 transition-all"
+                    >
+                        <Menu className="w-6 h-6" />
+                    </button>
+                </header>
+
+                {/* Última Quedada Card */}
+                <motion.div
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    className="sticker-btn w-full !rotate-1 !bg-accent text-black flex flex-col items-start gap-1"
+                >
+                    <span className="text-xs font-bold bg-black text-white px-2 py-0.5 rounded-full">PRÓXIMA LIADA</span>
+                    <h2 className="text-2xl font-black uppercase">{lastEvent.title}</h2>
+                    <div className="flex justify-between w-full font-urban text-sm font-bold mt-1">
+                        <span>🕐 {lastEvent.date}</span>
+                        <span>📍 {lastEvent.location}</span>
+                    </div>
+                </motion.div>
+
+                {/* Feed Rápido */}
+                <div className="space-y-4">
+                    <h3 className="font-urban text-sm font-bold text-gray-400 uppercase tracking-widest">Últimas Fotos</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                        {[1, 2, 3, 4].map((i) => (
+                            <div key={i} className="aspect-square bg-gray-800 rounded-xl overflow-hidden border border-white/10 relative group">
+                                <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-all" />
+                                {/* Placeholder imgs */}
+                                <img src={`https://picsum.photos/400?random=${i}`} alt="Foto" className="w-full h-full object-cover" />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            <Navbar />
+        </div>
+    );
+}

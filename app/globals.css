@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #0f0f0f;
+  --foreground: #ededed;
+  
+  /* Urban Palette */
+  --primary: #c0ff00; /* Neon Lime */
+  --secondary: #ff00ff; /* Hot Pink */
+  --accent: #00ffff; /* Cyan */
+  
+  --font-urban: 'Inter', sans-serif;
+  --font-graffiti: 'Permanent Marker', cursive;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: var(--font-urban);
+  overflow-x: hidden;
+}
+
+@layer components {
+  .sticker-btn {
+    @apply relative px-6 py-3 font-graffiti text-xl text-black bg-primary transform -rotate-2 hover:rotate-0 hover:scale-105 transition-all duration-200 shadow-[4px_4px_0px_0px_rgba(255,255,255,1)];
+  }
+  
+  .glass-panel {
+    @apply bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl;
+  }
+}
