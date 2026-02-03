@@ -18,6 +18,11 @@ export const metadata: Metadata = {
         icon: "/logo.svg",
         apple: "/logo.svg",
     },
+    appleWebApp: {
+        capable: true,
+        statusBarStyle: "black-translucent",
+        title: "La Peñada",
+    },
 };
 
 export const viewport: Viewport = {
