@@ -14,7 +14,19 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        // Check initial session
         checkSession();
+
+        // Listen for auth changes (login, logout, etc.)
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_IN' && session) {
+                checkSession();
+            }
+        });
+
+        return () => {
+            subscription.unsubscribe();
+        };
     }, []);
 
     const checkSession = async () => {
@@ -142,7 +154,8 @@ export default function LoginPage() {
                                             toast.error("Error de autenticación anónima. Habilítala en Supabase.");
                                             console.error(error);
                                         } else {
-                                            // Session listener will redirect
+                                            toast.success("Código aceptado.");
+                                            checkSession();
                                         }
                                     } else {
                                         toast.error("Código incorrecto. No eres digno.");
