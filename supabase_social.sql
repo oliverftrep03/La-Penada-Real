@@ -186,7 +186,104 @@ end $$;
 -- 8. Add Image URL to Store Items
 do $$
 begin
-  if not exists (select 1 from information_schema.columns where table_name = 'store_items' and column_name = 'image_url') then
-    alter table store_items add column image_url text;
+  end if;
+end $$;
+
+-- 9. XP & LEVELING SYSTEM
+-- Formula helper
+create or replace function get_xp_requirement(lvl int) returns int as $$
+begin
+  if lvl < 10 then
+    return lvl * 10;
+  else
+    -- Level 9 req was 90.
+    -- Level 10 req = 90 + 15 = 105.
+    -- Level 11 req = 105 + 15 = 120.
+    return 90 + ((lvl - 9) * 15);
+  end if;
+end;
+$$ language plpgsql immutable;
+
+create or replace function add_xp(target_user_id uuid, amount int)
+returns json as $$
+declare
+  current_xp int;
+  current_lvl int;
+  current_coins int;
+  xp_needed int;
+  levels_gained int := 0;
+  chests_awarded int := 0;
+  coins_awarded int := 0;
+  new_title text;
+begin
+  -- Get current state
+  select xp, level, coins into current_xp, current_lvl, current_coins from profiles where id = target_user_id;
+  
+  -- Initialize if null
+  if current_xp is null then current_xp := 0; end if;
+  if current_lvl is null then current_lvl := 1; end if;
+  if current_coins is null then current_coins := 0; end if;
+  
+  current_xp := current_xp + amount;
+  
+  -- Level Up Loop
+  loop
+    xp_needed := get_xp_requirement(current_lvl);
+    
+    if current_xp >= xp_needed and current_lvl < 50 then
+      current_xp := current_xp - xp_needed;
+      current_lvl := current_lvl + 1;
+      levels_gained := levels_gained + 1;
+      
+      -- Rewards
+      coins_awarded := coins_awarded + 20;
+      
+      -- Chests (Every 5 levels)
+      if (current_lvl % 5) = 0 then
+        insert into user_chests (user_id, type) values (target_user_id, 'level_up');
+        chests_awarded := chests_awarded + 1;
+      end if;
+      
+      -- Titles (Lemas) logic handled in UI or computed column, but we can store it?
+      -- "Blandengue de la Peñada" -> Lvl 5
+      -- ...
+      
+    else
+      exit; -- Break loop if not enough XP
+    end if;
+  end loop;
+  
+  -- Update Profile
+  update profiles 
+  set xp = current_xp, 
+      level = current_lvl, 
+      coins = current_coins + coins_awarded 
+  where id = target_user_id;
+  
+  return json_build_object(
+    'new_level', current_lvl, 
+    'levels_gained', levels_gained, 
+    'coins_added', coins_awarded,
+    'chests_added', chests_awarded
+  );
+end;
+$$ language plpgsql security definer;
+
+-- Trigger: XP for Photo Upload (10 XP)
+create or replace function on_gallery_upload_xp()
+returns trigger as $$
+begin
+  perform add_xp(NEW.user_id, 10);
+  return NEW;
+end;
+$$ language plpgsql security definer;
+
+do $$
+begin
+  if not exists (select 1 from pg_trigger where tgname = 'trigger_gallery_xp') then
+    create trigger trigger_gallery_xp
+    after insert on gallery_posts
+    for each row
+    execute function on_gallery_upload_xp();
   end if;
 end $$;

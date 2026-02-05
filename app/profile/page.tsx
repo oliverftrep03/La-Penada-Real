@@ -29,7 +29,7 @@ export default function ProfilePage() {
                 .from("user_inventory")
                 .select(`
                     id,
-                    store_items!inner(id, name, type, content, rarity)
+                    store_items!inner(id, name, type, content, rarity, image_url)
                 `)
                 .eq("user_id", session.user.id)
                 .eq("store_items.type", "collectible");
@@ -225,23 +225,38 @@ export default function ProfilePage() {
                     </div>
                 </div>
 
-                {/* Name & Bio */}
+                {/* Name & Title */}
                 <div>
                     <h1 className="text-3xl font-graffiti text-white">{profile?.group_name}</h1>
+                    <div className="bg-[#c0ff00]/10 text-[#c0ff00] text-xs font-bold px-2 py-0.5 rounded inline-block mb-1 border border-[#c0ff00]/20 uppercase tracking-wider">
+                        {getLevelTitle(profile?.level || 1)}
+                    </div>
                     <p className="text-gray-400 text-sm mt-1 max-w-xs">{profile?.description}</p>
                 </div>
 
-                {/* Stats */}
-                <div className="grid grid-cols-2 gap-3 mt-4">
-                    <div className="bg-[#1a1a1a] p-4 rounded-xl border border-white/5 flex items-center gap-3">
-                        <div className="bg-[#c0ff00]/20 p-2 rounded-lg">
-                            <Zap className="text-[#c0ff00]" size={20} />
-                        </div>
-                        <div>
-                            <div className="text-2xl font-bold font-mono">{profile?.xp || 0}</div>
-                            <div className="text-xs text-gray-400 uppercase tracking-wider">Puntos XP</div>
-                        </div>
+                {/* XP Bar */}
+                <div className="mt-4 bg-[#1a1a1a] p-4 rounded-xl border border-white/5 relative overflow-hidden">
+                    <div className="flex justify-between items-end mb-2">
+                        <span className="text-sm font-bold text-white">Nivel {profile?.level || 1}</span>
+                        <span className="text-xs text-gray-400 font-mono">
+                            {profile?.xp || 0} / {getXpRequirement(profile?.level || 1)} XP
+                        </span>
                     </div>
+                    <div className="h-4 bg-black rounded-full overflow-hidden border border-white/10 relative">
+                        <div
+                            className="h-full bg-gradient-to-r from-[#c0ff00] to-green-400"
+                            style={{ width: `${Math.min(100, ((profile?.xp || 0) / getXpRequirement(profile?.level || 1)) * 100)}%` }}
+                        ></div>
+                        {/* Strips overlay */}
+                        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/diagmonds-light.png')] opacity-30"></div>
+                    </div>
+                    <p className="text-[10px] text-gray-500 mt-2 text-center">
+                        Siguiente nivel: +20 monedas {((profile?.level || 1) + 1) % 5 === 0 && "& Cofre 🎁"}
+                    </p>
+                </div>
+
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 gap-3 mt-4">
                     <div className="bg-[#1a1a1a] p-4 rounded-xl border border-white/5 flex items-center gap-3">
                         <div className="bg-yellow-500/20 p-2 rounded-lg">
                             <Shield className="text-yellow-500" size={20} />
@@ -249,6 +264,15 @@ export default function ProfilePage() {
                         <div>
                             <div className="text-2xl font-bold font-mono">{profile?.coins || 0}</div>
                             <div className="text-xs text-gray-400 uppercase tracking-wider">Monedas</div>
+                        </div>
+                    </div>
+                    <div className="bg-[#1a1a1a] p-4 rounded-xl border border-white/5 flex items-center gap-3">
+                        <div className="bg-purple-500/20 p-2 rounded-lg">
+                            <Zap className="text-purple-500" size={20} />
+                        </div>
+                        <div>
+                            <div className="text-xl font-bold font-mono text-white">Top 10%</div>
+                            <div className="text-xs text-gray-400 uppercase tracking-wider">Ranking</div>
                         </div>
                     </div>
                 </div>
@@ -364,3 +388,19 @@ export default function ProfilePage() {
 
     );
 }
+
+// Helpers
+const getXpRequirement = (lvl: number) => {
+    if (lvl < 10) return lvl * 10;
+    return 90 + ((lvl - 9) * 15);
+};
+
+const getLevelTitle = (lvl: number) => {
+    if (lvl >= 50) return "Sacristan de la Peñada Real";
+    if (lvl >= 40) return "Peñonrado";
+    if (lvl >= 30) return "Cabo de la Peñiscola";
+    if (lvl >= 20) return "Peñista Experimentado";
+    if (lvl >= 10) return "Peñaprendiz";
+    if (lvl >= 5) return "Blandengue de la Peñada";
+    return "Recién Llegado";
+};
