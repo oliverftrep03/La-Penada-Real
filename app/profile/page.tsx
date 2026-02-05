@@ -140,8 +140,17 @@ export default function ProfilePage() {
         <div className="min-h-screen bg-[#000000] text-white pb-24">
             <Navbar />
 
+            {/* ERROR / LOADING STATE */}
+            {(!profile && !loading) && (
+                <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-4">
+                    <h2 className="text-xl font-bold text-red-500 mb-2">Error al cargar perfil</h2>
+                    <p className="text-gray-400 mb-4">No se pudo encontrar tu información.</p>
+                    <button onClick={() => window.location.reload()} className="bg-white/10 px-4 py-2 rounded-lg text-sm">Reintentar</button>
+                </div>
+            )}
+
             {/* Edit Modal */}
-            {editing && (
+            {editing && profile && (
                 <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
                     <div className="bg-[#1a1a1a] w-full max-w-lg rounded-2xl border border-white/10 p-6 max-h-[90vh] overflow-y-auto">
                         <div className="flex justify-between items-center mb-6">
@@ -301,31 +310,57 @@ export default function ProfilePage() {
                     </div>
                 </div>
 
-                {/* Frames Section */}
+            </div>
+
+            {/* COLLECTIBLES */}
+            {collectibles.length > 0 && (
                 <div className="mt-8">
-                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                        Marcos Desbloqueados <span className="text-[#c0ff00] text-xs px-2 py-0.5 border border-[#c0ff00] rounded ml-auto">Tienda</span>
+                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-cyan-400 font-graffiti text-2xl">
+                        💎 Coleccionables <span className="text-xs font-mono text-gray-500 ml-2">({collectibles.length})</span>
                     </h3>
-                    <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-                        {(profile?.frames_unlocked || ['basic']).map((frame: string) => (
-                            <div key={frame} className="flex flex-col items-center gap-2 min-w-[80px]">
-                                <div className={`w-16 h-16 bg-gray-800 rounded-lg ${frame === 'neon' ? 'border-2 border-[#c0ff00] shadow-[0_0_10px_#c0ff00]' : ''}`}></div>
-                                <span className="text-xs text-gray-500 capitalize">{frame}</span>
+                    <div className="grid grid-cols-4 gap-3">
+                        {collectibles.map((item, i) => (
+                            <div key={i} className={`aspect-square rounded-xl bg-gradient-to-br from-black to-slate-900 border border-white/10 flex items-center justify-center relative overflow-hidden group hover:border-cyan-400/50 transition-colors`}>
+                                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/diamond-upholstery.png')] opacity-20"></div>
+                                {item.image_url ? (
+                                    <div className="relative w-full h-full p-2">
+                                        <Image src={item.image_url} fill className="object-contain p-2" alt={item.name} />
+                                    </div>
+                                ) : (
+                                    <span className="text-4xl filter drop-shadow-[0_0_10px_rgba(34,211,238,0.5)] animate-pulse">{item.content || '💎'}</span>
+                                )}
+                                <div className="absolute bottom-1 text-[8px] font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity bg-black/80 px-2 rounded text-cyan-400">{item.name}</div>
                             </div>
                         ))}
                     </div>
                 </div>
+            )}
 
-                <div className="mt-8 flex justify-center">
-                    <button
-                        onClick={handleLogout}
-                        className="text-red-500 flex items-center gap-2 text-sm font-bold opacity-70 hover:opacity-100 transition-opacity"
-                    >
-                        <LogOut size={16} /> Cerrar Sesión
-                    </button>
+            {/* Frames Section */}
+            <div className="mt-8">
+                <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                    Marcos Desbloqueados <span className="text-[#c0ff00] text-xs px-2 py-0.5 border border-[#c0ff00] rounded ml-auto">Tienda</span>
+                </h3>
+                <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                    {(profile?.frames_unlocked || ['basic']).map((frame: string) => (
+                        <div key={frame} className="flex flex-col items-center gap-2 min-w-[80px]">
+                            <div className={`w-16 h-16 bg-gray-800 rounded-lg ${frame === 'neon' ? 'border-2 border-[#c0ff00] shadow-[0_0_10px_#c0ff00]' : ''}`}></div>
+                            <span className="text-xs text-gray-500 capitalize">{frame}</span>
+                        </div>
+                    ))}
                 </div>
-
             </div>
+
+            <div className="mt-8 flex justify-center">
+                <button
+                    onClick={handleLogout}
+                    className="text-red-500 flex items-center gap-2 text-sm font-bold opacity-70 hover:opacity-100 transition-opacity"
+                >
+                    <LogOut size={16} /> Cerrar Sesión
+                </button>
+            </div>
+
         </div>
+
     );
 }

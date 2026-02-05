@@ -65,6 +65,8 @@ create table if not exists user_chests (
 -- RLS for user_chests
 alter table user_chests enable row level security;
 
+do $$
+begin
   if not exists (select 1 from pg_policies where policyname = 'View own chests' and tablename = 'user_chests') then
     create policy "View own chests" on user_chests for select using (auth.uid() = user_id);
   end if;
@@ -178,5 +180,13 @@ begin
     after insert on gallery_posts
     for each row
     execute function check_5_photos_reward();
+  end if;
+end $$;
+
+-- 8. Add Image URL to Store Items
+do $$
+begin
+  if not exists (select 1 from information_schema.columns where table_name = 'store_items' and column_name = 'image_url') then
+    alter table store_items add column image_url text;
   end if;
 end $$;
