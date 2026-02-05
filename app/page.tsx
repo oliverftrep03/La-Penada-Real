@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function LoginPage() {
+    const supabase = createClientComponentClient();
     const router = useRouter();
     const [loading, setLoading] = useState(true);
 

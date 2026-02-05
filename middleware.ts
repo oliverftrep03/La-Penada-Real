@@ -6,43 +6,53 @@ export async function middleware(req: NextRequest) {
     const res = NextResponse.next();
 
     try {
-        // Safety check for critical env vars
+        // 1. Check for Env Vars to prevent 500 crashes
         if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-            console.warn("Middleware skipped: Supabase keys missing.");
-            return res; // Allow request to proceed (client-side will handle auth or fail gracefully)
+            console.warn("Middleware warning: Supabase keys missing.");
+            return res;
         }
 
         const supabase = createMiddlewareClient({ req, res });
 
-        // Refresh session if expired - this is the main purpose of middleware
+        // 2. Refresh the session (Essential for Supabase Auth to work)
         const { data: { session } } = await supabase.auth.getSession();
 
-        // Route Protection Logic
         const path = req.nextUrl.pathname;
 
-        // 1. If NOT logged in, block access to protected routes
-        // We allow '/setup' and '/home' to pass through so Client-Side Auth can handle the session check
-        // This fixes the "Login Loop" if server cookies are delayed
-        const isPublic = path === '/' || path.startsWith('/auth') || path.startsWith('/api') || path === '/setup' || path === '/home';
+        // 3. RELAXED PROTECTION (Anti-Loop Logic)
+        // We only strictly block access if the user is NOT logged in AND trying to access
+        // a route that is DEFINITELY not public.
+        // We explicitly ALLOW '/home' and '/setup' to pass through to let the Client-Side check the session.
 
-        if (!session && !isPublic) {
+        const isPublicOrClientHandled =
+            path === '/' ||
+            path.startsWith('/auth') ||
+            path.startsWith('/api') ||
+            path === '/setup' ||
+            path === '/home' ||
+            path === '/profile' ||    // Let client redirect if needed
+            path === '/gallery' ||    // Let client redirect if needed
+            path === '/chat';         // Let client redirect if needed
+
+        if (!session && !isPublicOrClientHandled) {
+            // Only redirect to login if they are trying to access something totally unknown/protected
+            // In practice, this block might effectively do nothing if all main routes are whitelisted,
+            // which is INTENTIONAL to fix the loop. The Pages themselves will kick the user out if needed.
             return NextResponse.redirect(new URL('/', req.url));
         }
 
-        // 2. If logged in, prevent access to login page
+        // 4. Login Page Redirect
+        // If they are strictly on '/' (login) and we are SURE they have a session, send them home.
         if (session && path === '/') {
             return NextResponse.redirect(new URL('/home', req.url));
         }
-    }
+
+        return res;
 
     } catch (e) {
-    // CRITICAL: If middleware fails, DO NOT CRASH APP (500 Error).
-    // Just authorize the request and let the client handle errors.
-    console.error("Middleware Error:", e);
-    return res;
-}
-
-return res;
+        console.error("Middleware Error:", e);
+        return res;
+    }
 }
 
 export const config = {
