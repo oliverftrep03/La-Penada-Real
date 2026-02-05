@@ -204,6 +204,21 @@ export default function Admin() {
                         <h2 className="font-bold text-lg border-b border-white/10 pb-2 flex items-center gap-2">
                             <Users className="w-5 h-5" /> Jugadores
                         </h2>
+
+                        <button
+                            onClick={async () => {
+                                const { data: { session } } = await supabase.auth.getSession();
+                                if (session) {
+                                    const { error } = await supabase.rpc('add_coins', { user_id: session.user.id, amount: 999999 });
+                                    if (!error) alert("¡Has recibido 999,999 monedas!");
+                                    else alert("Error al añadir monedas");
+                                }
+                            }}
+                            className="w-full bg-yellow-500 text-black font-bold py-2 rounded mb-4 hover:scale-105 transition-transform"
+                        >
+                            💰 AUTO-REGALARME 1M MONEDAS
+                        </button>
+
                         <div className="space-y-2 max-h-40 overflow-y-auto">
                             {users.map(user => (
                                 <div

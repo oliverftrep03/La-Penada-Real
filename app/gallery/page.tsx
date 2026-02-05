@@ -221,14 +221,14 @@ export default function GalleryPage() {
                                 <div className="flex items-center gap-3">
                                     <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-[#c0ff00]">
                                         <Image
-                                            src={post.profiles.avatar_url || "https://via.placeholder.com/150"}
-                                            alt={post.profiles.group_name}
+                                            src={avatarUrl}
+                                            alt={groupName}
                                             fill
                                             className="object-cover"
                                         />
                                     </div>
                                     <div className="flex flex-col">
-                                        <span className="font-bold text-white text-sm tracking-wide">{post.profiles.group_name}</span>
+                                        <span className="font-bold text-white text-sm tracking-wide">{groupName}</span>
                                         <span className="text-xs text-gray-400 font-medium capitalize">{timeAgo}</span>
                                     </div>
                                 </div>
@@ -266,7 +266,7 @@ export default function GalleryPage() {
 
                                 {post.caption && (
                                     <p className="text-gray-300 text-sm">
-                                        <span className="font-bold text-white mr-2">{post.profiles.group_name}</span>
+                                        <span className="font-bold text-white mr-2">{groupName}</span>
                                         {post.caption}
                                     </p>
                                 )}
