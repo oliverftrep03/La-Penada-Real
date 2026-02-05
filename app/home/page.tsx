@@ -16,11 +16,12 @@ export default function Home() {
     const [userName, setUserName] = useState("Amigo");
 
     // Datos simulados por ahora
-    const lastEvent = { title: "Cervezas en el Centro", date: "Hoy 20:30", location: "Plaza Mayor" };
+    const [randomSpot, setRandomSpot] = useState<any>(null);
 
     useEffect(() => {
         fetchRecentPosts();
         getUserName();
+        fetchRandomSpot();
     }, []);
 
     const getUserName = async () => {
@@ -28,6 +29,14 @@ export default function Home() {
         if (session) {
             const { data } = await supabase.from('profiles').select('group_name').eq('id', session.user.id).single();
             if (data) setUserName(data.group_name);
+        }
+    };
+
+    const fetchRandomSpot = async () => {
+        const { data } = await supabase.from("map_pins").select("*");
+        if (data && data.length > 0) {
+            const randomIndex = Math.floor(Math.random() * data.length);
+            setRandomSpot(data[randomIndex]);
         }
     };
 
@@ -104,19 +113,35 @@ export default function Home() {
                     </button>
                 </header>
 
-                {/* Última Quedada Card */}
-                <motion.div
-                    initial={{ y: 20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    className="sticker-btn w-full !rotate-1 !bg-accent text-black flex flex-col items-start gap-1"
-                >
-                    <span className="text-xs font-bold bg-black text-white px-2 py-0.5 rounded-full">PRÓXIMA LIADA</span>
-                    <h2 className="text-2xl font-black uppercase">{lastEvent.title}</h2>
-                    <div className="flex justify-between w-full font-urban text-sm font-bold mt-1">
-                        <span>🕐 {lastEvent.date}</span>
-                        <span>📍 {lastEvent.location}</span>
-                    </div>
-                </motion.div>
+                {/* Random Spot Card */}
+                {randomSpot ? (
+                    <Link href="/map">
+                        <motion.div
+                            initial={{ y: 20, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            className="sticker-btn w-full !rotate-1 !bg-accent text-black flex flex-col items-start gap-1 cursor-pointer hover:scale-[1.02] transition-transform"
+                        >
+                            <span className="text-xs font-bold bg-black text-white px-2 py-0.5 rounded-full">¿DÓNDE VAMOS?</span>
+                            <h2 className="text-2xl font-black uppercase truncate w-full">{randomSpot.title}</h2>
+                            <div className="flex justify-between w-full font-urban text-sm font-bold mt-1">
+                                <span>👤 {randomSpot.author}</span>
+                                <span>🗺️ Ir al Mapa</span>
+                            </div>
+                        </motion.div>
+                    </Link>
+                ) : (
+                    <motion.div
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        className="sticker-btn w-full !rotate-1 !bg-gray-800 text-white flex flex-col items-start gap-1"
+                    >
+                        <span className="text-xs font-bold bg-black text-white px-2 py-0.5 rounded-full">SIN PLANES</span>
+                        <h2 className="text-xl font-bold uppercase">Añade sitios al mapa</h2>
+                        <div className="flex justify-between w-full font-urban text-sm font-bold mt-1">
+                            <span>Ve a la sección Mapa 🗺️</span>
+                        </div>
+                    </motion.div>
+                )}
 
                 {/* Feed Rápido */}
                 <div className="space-y-4">
