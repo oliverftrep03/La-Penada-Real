@@ -15,13 +15,13 @@ export default function Home() {
     const [recentPosts, setRecentPosts] = useState<any[]>([]);
     const [userName, setUserName] = useState("Amigo");
 
-    // Datos simulados por ahora
-    const [randomSpot, setRandomSpot] = useState<any>(null);
+    const [spot, setSpot] = useState<any>(null);
+    const [isHighlighted, setIsHighlighted] = useState(false);
 
     useEffect(() => {
         fetchRecentPosts();
         getUserName();
-        fetchRandomSpot();
+        fetchSpot();
     }, []);
 
     const getUserName = async () => {
@@ -32,11 +32,28 @@ export default function Home() {
         }
     };
 
-    const fetchRandomSpot = async () => {
+    const fetchSpot = async () => {
+        // 1. Buscar pin destacado activo
+        const { data: highlighted } = await supabase
+            .from("map_pins")
+            .select("*")
+            .gt('highlighted_until', new Date().toISOString())
+            .order('highlighted_until', { ascending: false })
+            .limit(1)
+            .single();
+
+        if (highlighted) {
+            setSpot(highlighted);
+            setIsHighlighted(true);
+            return;
+        }
+
+        // 2. Si no, random
         const { data } = await supabase.from("map_pins").select("*");
         if (data && data.length > 0) {
             const randomIndex = Math.floor(Math.random() * data.length);
-            setRandomSpot(data[randomIndex]);
+            setSpot(data[randomIndex]);
+            setIsHighlighted(false);
         }
     };
 
@@ -113,19 +130,21 @@ export default function Home() {
                     </button>
                 </header>
 
-                {/* Random Spot Card */}
-                {randomSpot ? (
-                    <Link href="/map">
+                {/* Spot Card (Prioritized or Random) */}
+                {spot ? (
+                    <Link href="/map" className="block mt-12"> {/* Added margin-top (mt-12) */}
                         <motion.div
                             initial={{ y: 20, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
-                            className="sticker-btn w-full !rotate-1 !bg-accent text-black flex flex-col items-start gap-1 cursor-pointer hover:scale-[1.02] transition-transform"
+                            className={`sticker-btn w-full !rotate-1 flex flex-col items-start gap-1 cursor-pointer hover:scale-[1.02] transition-transform ${isHighlighted ? '!bg-red-600 text-white border-4 border-white shadow-[0_0_20px_red]' : '!bg-accent text-black'}`}
                         >
-                            <span className="text-xs font-bold bg-black text-white px-2 py-0.5 rounded-full">¿DÓNDE VAMOS?</span>
-                            <h2 className="text-2xl font-black uppercase truncate w-full">{randomSpot.title}</h2>
+                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${isHighlighted ? 'bg-white text-red-600 animate-pulse' : 'bg-black text-white'}`}>
+                                {isHighlighted ? '🔥 LIADA EN CURSO' : '¿DÓNDE VAMOS?'}
+                            </span>
+                            <h2 className="text-2xl font-black uppercase truncate w-full">{spot.title}</h2>
                             <div className="flex justify-between w-full font-urban text-sm font-bold mt-1">
-                                <span>👤 {randomSpot.author}</span>
-                                <span>🗺️ Ir al Mapa</span>
+                                <span>👤 {spot.author}</span>
+                                <span>{isHighlighted ? '🚨 ÚNETE AHORA' : '🗺️ Ir al Mapa'}</span>
                             </div>
                         </motion.div>
                     </Link>
@@ -133,7 +152,7 @@ export default function Home() {
                     <motion.div
                         initial={{ y: 20, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
-                        className="sticker-btn w-full !rotate-1 !bg-gray-800 text-white flex flex-col items-start gap-1"
+                        className="sticker-btn w-full !rotate-1 !bg-gray-800 text-white flex flex-col items-start gap-1 mt-12" // Added margin-top here too
                     >
                         <span className="text-xs font-bold bg-black text-white px-2 py-0.5 rounded-full">SIN PLANES</span>
                         <h2 className="text-xl font-bold uppercase">Añade sitios al mapa</h2>

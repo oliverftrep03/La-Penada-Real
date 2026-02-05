@@ -11,13 +11,33 @@ export default function ProfilePage() {
     const router = useRouter();
     const [rewards, setRewards] = useState<any[]>([]);
     const [userUnlocks, setUserUnlocks] = useState<Set<string>>(new Set());
+    const [collectibles, setCollectibles] = useState<any[]>([]); // New state
     const [profile, setProfile] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         fetchProfile();
         fetchRewards();
+        fetchCollectibles();
     }, []);
+
+    const fetchCollectibles = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+            const { data } = await supabase
+                .from("user_inventory")
+                .select(`
+                    id,
+                    store_items!inner(id, name, type, content, rarity)
+                `)
+                .eq("user_id", session.user.id)
+                .eq("store_items.type", "collectible");
+
+            if (data) {
+                setCollectibles(data.map((i: any) => i.store_items));
+            }
+        }
+    };
 
     const fetchRewards = async () => {
         const { data: defs } = await supabase.from("reward_definitions").select("*").order("slot_index");

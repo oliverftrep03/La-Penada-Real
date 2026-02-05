@@ -95,13 +95,40 @@ export default function Map() {
     const [newPinName, setNewPinName] = useState("");
     const [newPinIcon, setNewPinIcon] = useState(PIN_ICONS[0]);
     const [showLabels, setShowLabels] = useState(true);
+    const [highlight, setHighlight] = useState(false);
+
+    // Iconos disponibles (Default + Comprados)
+    const [availableIcons, setAvailableIcons] = useState<any[]>(PIN_ICONS);
 
     // Coordenadas iniciales (Madrid Centro)
     const position: [number, number] = [40.416775, -3.703790];
 
     useEffect(() => {
         fetchPins();
+        fetchMyIcons();
     }, []);
+
+    const fetchMyIcons = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+            const { data } = await supabase
+                .from("user_inventory")
+                .select(`
+                    store_items!inner(id, name, type, content)
+                `)
+                .eq("user_id", session.user.id)
+                .eq("store_items.type", "map_icon");
+
+            if (data) {
+                const purchased = data.map((i: any) => ({
+                    label: i.store_items.name,
+                    type: 'emoji', // Assuming store content is emoji for simplicity, or we can add type check
+                    content: i.store_items.content
+                }));
+                setAvailableIcons([...PIN_ICONS, ...purchased]);
+            }
+        }
+    };
 
     const fetchPins = async () => {
         const { data } = await supabase.from("map_pins").select("*");
@@ -111,6 +138,7 @@ export default function Map() {
     const handleMapClick = (e: any) => {
         setNewPinPos([e.latlng.lat, e.latlng.lng]);
         setNewPinIcon(PIN_ICONS[0]);
+        setHighlight(false);
     };
 
     const savePin = async () => {
@@ -123,11 +151,12 @@ export default function Map() {
             lng: newPinPos[1],
             title: newPinName,
             author: user,
-            category: JSON.stringify({ type: newPinIcon.type, content: newPinIcon.content })
+            category: JSON.stringify({ type: newPinIcon.type, content: newPinIcon.content }),
+            highlighted_until: highlight ? new Date(Date.now() + 60 * 60 * 1000).toISOString() : null
         }]);
 
         if (!error) {
-            toast.success("¡Sitio guardado!");
+            toast.success(highlight ? "¡Sitio destacado por 1h! 🔥" : "¡Sitio guardado!");
             setNewPinPos(null);
             setNewPinName("");
             fetchPins();
@@ -248,9 +277,9 @@ export default function Map() {
                     </div>
 
                     <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                        {PIN_ICONS.map((item) => (
+                        {availableIcons.map((item, index) => (
                             <button
-                                key={item.label}
+                                key={index}
                                 onClick={() => setNewPinIcon(item)}
                                 className={`flex flex-col items-center justify-center min-w-[50px] aspect-square rounded-lg border transition-all ${newPinIcon.content === item.content ? "bg-primary/20 border-primary scale-110" : "bg-white/5 border-transparent hover:bg-white/10"}`}
                             >
@@ -262,6 +291,19 @@ export default function Map() {
                             </button>
                         ))}
                     </div>
+
+                    <label className="flex items-center gap-2 bg-white/5 p-3 rounded-lg border border-white/10 cursor-pointer hover:bg-white/10">
+                        <input
+                            type="checkbox"
+                            checked={highlight}
+                            onChange={(e) => setHighlight(e.target.checked)}
+                            className="w-5 h-5 accent-accent"
+                        />
+                        <div className="flex flex-col">
+                            <span className="font-bold text-white text-sm">📢 Avisar al Grupo</span>
+                            <span className="text-[10px] text-gray-400">Destacar en Inicio durante 1h</span>
+                        </div>
+                    </label>
 
                     <input
                         autoFocus

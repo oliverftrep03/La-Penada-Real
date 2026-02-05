@@ -28,8 +28,9 @@ export default function GalleryPage() {
     const [currentUser, setCurrentUser] = useState<any>(null);
     const [uploading, setUploading] = useState(false);
     const [selectedFrame, setSelectedFrame] = useState("basic");
+    const [myFrames, setMyFrames] = useState<any[]>([{ id: 'basic', name: 'Básico', content: 'border-0' }]);
 
-    const frames = {
+    const frames: any = {
         basic: "border-0 shadow-none",
         gold: "border-4 border-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.5)]",
         neon: "border-4 border-[#c0ff00] shadow-[0_0_15px_rgba(192,255,0,0.6)]",
@@ -39,8 +40,9 @@ export default function GalleryPage() {
     useEffect(() => {
         getCurrentUser();
         fetchPosts();
+        fetchMyFrames();
 
-        // Realtime subscription (Optional enhancement)
+        // ... realtime subscription code ...
         const channel = supabase
             .channel('gallery_posts')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'gallery_posts' }, () => {
@@ -53,29 +55,30 @@ export default function GalleryPage() {
         }
     }, []);
 
-    const getCurrentUser = async () => {
+    const fetchMyFrames = async () => {
         const { data: { session } } = await supabase.auth.getSession();
-        if (session) setCurrentUser(session.user);
-    };
+        if (!session) return;
 
-    const fetchPosts = async () => {
-        const { data, error } = await supabase
-            .from("gallery_posts")
+        // Fetch purchased frames
+        const { data } = await supabase
+            .from("user_inventory")
             .select(`
-                *,
-                profiles (group_name, avatar_url),
-                gallery_likes (user_id)
+                item_id,
+                store_items!inner(id, name, type, content)
             `)
-            .order("created_at", { ascending: false });
+            .eq("user_id", session.user.id)
+            .eq("store_items.type", "frame");
 
-        if (error) {
-            console.error(error);
-            toast.error("Error cargando fotos");
+        if (data) {
+            const purchased = data.map((i: any) => i.store_items);
+            setMyFrames([{ id: 'basic', name: 'Básico', content: 'border-0' }, ...purchased]);
         }
-        if (data) setPosts(data as any);
     };
+
+    // ... getCurrentUser, fetchPosts ...
 
     const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        // ... existing check ...
         if (!e.target.files || e.target.files.length === 0 || !currentUser) {
             if (!currentUser) toast.error("Debes iniciar sesión");
             return;
@@ -84,6 +87,7 @@ export default function GalleryPage() {
         const file = e.target.files[0];
 
         try {
+            // ... upload storage ...
             const fileExt = file.name.split('.').pop();
             const fileName = `${Math.random()}.${fileExt}`;
             const filePath = `${currentUser.id}/${fileName}`;
@@ -98,16 +102,31 @@ export default function GalleryPage() {
                 .from('gallery')
                 .getPublicUrl(filePath);
 
+            // Get selected frame content (class)
+            const frameContent = myFrames.find(f => f.id === selectedFrame)?.content || "border-0";
+            // Map known content to keys if using old logic, OR just save the class directly
+            // User requested "canjeables", let's save the frame ID or style.
+            // Simplified: Saving the 'content' CSS string directly or a mapped key.
+            // Let's stick to the existing 'frame_style' column but now it stores the actual CSS class or key.
+            // Since we have hardcoded 'frames' object for rendering posts, let's update it to support dynamic classes OR use style attribute.
+            // Pivot: Let's store the `content` (CSS class) directly in `frame_style`.
+
             const { error: dbError } = await supabase
                 .from("gallery_posts")
                 .insert({
                     user_id: currentUser.id,
                     photo_url: publicUrl,
                     caption: "",
-                    frame_style: selectedFrame
+                    frame_style: frameContent // Saving the CSS class directly
                 });
 
             if (dbError) throw dbError;
+
+            // ... award coins ...
+            const { error: coinsError } = await supabase.rpc('add_coins', { user_id: currentUser.id, amount: 10 });
+            // ... toasts ...
+            if (coinsError) console.error("Error adding coins", coinsError);
+            else toast.success("+10 Monedas 🪙");
 
             toast.success("Foto subida 📸");
             fetchPosts();
@@ -120,39 +139,46 @@ export default function GalleryPage() {
         }
     };
 
-    const toggleLike = async (postId: string, hasLiked: boolean) => {
-        if (!currentUser) return;
-
-        if (hasLiked) {
-            await supabase.from("gallery_likes").delete().match({ post_id: postId, user_id: currentUser.id });
-        } else {
-            await supabase.from("gallery_likes").insert({ post_id: postId, user_id: currentUser.id });
-        }
-        fetchPosts();
-    };
+    // ... toggleLike ...
 
     return (
         <div className="min-h-screen bg-[#121212] pb-24 text-white">
             <Navbar />
 
-            <div className="p-4 bg-black/80 backdrop-blur-md border-b border-white/10 sticky top-0 z-20 flex justify-between items-center shadow-lg">
-                <h1 className="text-xl font-bold font-graffiti tracking-wider">Galería <span className="text-[#c0ff00]">Real</span></h1>
-
-                <div className="relative group">
-                    <div className="absolute inset-0 bg-[#c0ff00] blur-lg opacity-20 group-hover:opacity-40 transition-opacity"></div>
-                    <div className="relative">
-                        <input
-                            type="file"
-                            accept="image/*"
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
-                            onChange={handleUpload}
-                            disabled={uploading}
-                        />
-                        <button className="bg-[#c0ff00] text-black px-4 py-2 rounded-full text-sm font-black uppercase tracking-wider flex items-center gap-2 hover:scale-105 transition-transform active:scale-95 shadow-xl disabled:opacity-50 disabled:cursor-not-allowed">
-                            {uploading ? <div className="animate-spin">⏳</div> : <Camera size={18} strokeWidth={2.5} />}
-                            {uploading ? "Subiendo..." : "Subir Foto"}
-                        </button>
+            <div className="p-4 bg-black/80 backdrop-blur-md border-b border-white/10 sticky top-0 z-20 flex flex-col gap-4 shadow-lg">
+                <div className="flex justify-between items-center">
+                    <h1 className="text-xl font-bold font-graffiti tracking-wider">Galería <span className="text-[#c0ff00]">Real</span></h1>
+                    <div className="relative group">
+                        {/* Upload Button */}
+                        <div className="absolute inset-0 bg-[#c0ff00] blur-lg opacity-20 group-hover:opacity-40 transition-opacity"></div>
+                        <div className="relative">
+                            <input
+                                type="file"
+                                accept="image/*"
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+                                onChange={handleUpload}
+                                disabled={uploading}
+                            />
+                            <button className="bg-[#c0ff00] text-black px-4 py-2 rounded-full text-sm font-black uppercase tracking-wider flex items-center gap-2 hover:scale-105 transition-transform active:scale-95 shadow-xl disabled:opacity-50 disabled:cursor-not-allowed">
+                                {uploading ? <div className="animate-spin">⏳</div> : <Camera size={18} strokeWidth={2.5} />}
+                                {uploading ? "Subiendo..." : "Subir Foto"}
+                            </button>
+                        </div>
                     </div>
+                </div>
+
+                {/* Frame Selector */}
+                <div className="w-full overflow-x-auto scrollbar-hide flex gap-3 pb-2">
+                    {myFrames.map(frame => (
+                        <button
+                            key={frame.id}
+                            onClick={() => setSelectedFrame(frame.id)}
+                            className={`flex flex-col items-center gap-1 min-w-[60px] p-2 rounded-lg border transition-all ${selectedFrame === frame.id ? "bg-white/10 border-[#c0ff00]" : "border-transparent bg-transparent opacity-50 hover:opacity-100"}`}
+                        >
+                            <div className={`w-10 h-10 bg-gray-800 rounded-md ${frame.content}`}></div>
+                            <span className="text-[10px] truncate max-w-full">{frame.name}</span>
+                        </button>
+                    ))}
                 </div>
             </div>
 
@@ -167,8 +193,8 @@ export default function GalleryPage() {
 
                 {posts.map((post) => {
                     const hasLiked = post.gallery_likes.some(l => l.user_id === currentUser?.id);
-                    // @ts-ignore
-                    const frameClass = frames[post.frame_style] || frames.basic;
+                    // Use frame_style directly or fallback to basic border
+                    const frameClass = post.frame_style && post.frame_style !== 'basic' ? post.frame_style : "border-0";
 
                     const timeAgo = formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: es });
 

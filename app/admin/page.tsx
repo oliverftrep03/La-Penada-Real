@@ -20,7 +20,52 @@ export default function Admin() {
 
     // Estados TIENDA
     const [items, setItems] = useState<any[]>([]);
-    const [newItem, setNewItem] = useState({ name: "", price: 100, rarity: "common", type: "frame" });
+    const [newItem, setNewItem] = useState({ name: "", price: 100, rarity: "common", type: "frame", content: "" });
+
+    const handleColorChange = (key: string, value: string) => {
+        updateTheme({ colors: { ...theme.colors, [key]: value } });
+    };
+
+    const handleImageUpload = async (key: string, file: File) => {
+        setUploading(true);
+        try {
+            const fileName = `bg-${key}-${Math.random()}.png`;
+            const { error } = await supabase.storage.from('gallery').upload(fileName, file);
+            if (error) throw error;
+            const { data } = supabase.storage.from('gallery').getPublicUrl(fileName);
+            updateTheme({ backgrounds: { ...theme.backgrounds, [key]: data.publicUrl } });
+            alert("Fondo actualizado");
+        } catch (e) {
+            console.error(e);
+            alert("Error subiendo imagen");
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const loadItems = async () => {
+        const { data } = await supabase.from("store_items").select("*").order("created_at", { ascending: false });
+        if (data) setItems(data);
+    };
+
+    const createItem = async () => {
+        if (!newItem.name || newItem.price <= 0) return alert("Rellena nombre y precio");
+        const { error } = await supabase.from("store_items").insert([newItem]);
+        if (error) {
+            console.error(error);
+            alert("Error creando item");
+        } else {
+            alert("Ítem creado en Tienda");
+            setNewItem({ name: "", price: 100, rarity: "common", type: "frame", content: "" });
+            loadItems();
+        }
+    };
+
+    const deleteItem = async (id: string) => {
+        if (!confirm("¿Borrar item?")) return;
+        const { error } = await supabase.from("store_items").delete().eq("id", id);
+        if (!error) loadItems();
+    };
 
     const loadRewards = async () => {
         const { data } = await supabase.from("reward_definitions").select("*").order("slot_index");
@@ -151,21 +196,49 @@ export default function Admin() {
                     <section className="glass-panel p-5 space-y-4 border-l-4 border-green-500">
                         <h2 className="font-bold text-lg text-green-400">Crear Artículo</h2>
                         <div className="grid grid-cols-2 gap-2">
-                            <input placeholder="Nombre" className="p-2 bg-black/50 rounded border border-white/10" value={newItem.name} onChange={e => setNewItem({ ...newItem, name: e.target.value })} />
-                            <input type="number" placeholder="Precio" className="p-2 bg-black/50 rounded border border-white/10" value={newItem.price} onChange={e => setNewItem({ ...newItem, price: parseInt(e.target.value) })} />
-                            <select className="p-2 bg-black/50 rounded border border-white/10" value={newItem.rarity} onChange={e => setNewItem({ ...newItem, rarity: e.target.value })}>
-                                <option value="common">Peñomún (Gris)</option>
-                                <option value="rare">Peñarro (Azul)</option>
-                                <option value="epic">Peñepico (Morado)</option>
-                                <option value="legendary">Peñitico (Rojo)</option>
-                                <option value="mythic">Peñandario (Dorado)</option>
-                                <option value="unique">Peñada Real (Platino)</option>
-                            </select>
-                            <select className="p-2 bg-black/50 rounded border border-white/10" value={newItem.type} onChange={e => setNewItem({ ...newItem, type: e.target.value })}>
+                            <input
+                                placeholder="Nombre"
+                                className="p-2 bg-black/50 rounded border border-white/10"
+                                value={newItem.name}
+                                onChange={e => setNewItem({ ...newItem, name: e.target.value })}
+                            />
+                            <input
+                                type="number"
+                                placeholder="Precio"
+                                className="p-2 bg-black/50 rounded border border-white/10"
+                                value={newItem.price}
+                                onChange={e => setNewItem({ ...newItem, price: parseInt(e.target.value) })}
+                            />
+                            <select
+                                className="p-2 bg-black/50 rounded border border-white/10"
+                                value={newItem.type}
+                                onChange={e => setNewItem({ ...newItem, type: e.target.value })}
+                            >
                                 <option value="frame">Marco</option>
-                                <option value="title">Título</option>
-                                <option value="sticker">Sticker</option>
+                                <option value="map_icon">Icono Mapa</option>
+                                <option value="collectible">Coleccionable</option>
                             </select>
+
+                            {newItem.type === 'collectible' && (
+                                <select
+                                    className="p-2 bg-black/50 rounded border border-white/10"
+                                    value={newItem.rarity}
+                                    onChange={e => setNewItem({ ...newItem, rarity: e.target.value })}
+                                >
+                                    <option value="common">Peñomún (Gris)</option>
+                                    <option value="rare">Peñarro (Azul)</option>
+                                    <option value="epic">Peñepico (Morado)</option>
+                                    <option value="legendary">Peñitico (Rojo)</option>
+                                    <option value="unique">Peñatino (Platino)</option>
+                                </select>
+                            )}
+
+                            <input
+                                placeholder={newItem.type === 'frame' ? "Clase CSS (red)" : "URL Imagen / Emoji"}
+                                className="p-2 bg-black/50 rounded border border-white/10 col-span-2"
+                                value={newItem.content} // Ensure 'content' is in state type
+                                onChange={e => setNewItem({ ...newItem, content: e.target.value })} // Ensure 'content' is in state type
+                            />
                         </div>
                         <button onClick={createItem} className="w-full bg-green-500 text-black font-bold py-2 rounded">AÑADIR A TIENDA</button>
                     </section>
@@ -175,8 +248,16 @@ export default function Admin() {
                         {items.map(item => (
                             <div key={item.id} className="flex justify-between items-center bg-white/5 p-3 rounded-lg border border-white/10">
                                 <div>
-                                    <div className="font-bold">{item.name}</div>
-                                    <div className="text-xs text-gray-400">{item.price} 🪙 - {item.rarity}</div>
+                                    <div className="font-bold flex items-center gap-2">
+                                        {item.name}
+                                        <span className={`text-[10px] px-1 rounded border ${item.type === 'frame' ? 'border-blue-500 text-blue-500' : item.type === 'collectible' ? 'border-purple-500 text-purple-500' : 'border-green-500 text-green-500'}`}>
+                                            {item.type}
+                                        </span>
+                                    </div>
+                                    <div className="text-xs text-gray-400">
+                                        {item.price} 🪙
+                                        {item.rarity && <span className="ml-2 capitalize opacity-70"> • {item.rarity}</span>}
+                                    </div>
                                 </div>
                                 <button onClick={() => deleteItem(item.id)} className="text-red-500 text-xs border border-red-500/50 px-2 py-1 rounded hover:bg-red-500 hover:text-white">BORRAR</button>
                             </div>
