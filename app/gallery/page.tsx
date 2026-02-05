@@ -79,7 +79,50 @@ export default function GalleryPage() {
         }
     };
 
-    // ... getCurrentUser, fetchPosts ...
+    const getCurrentUser = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+            setCurrentUser(session.user);
+        } else {
+            setCurrentUser(null);
+        }
+    };
+
+    const fetchPosts = async () => {
+        try {
+            const { data, error } = await supabase
+                .from("gallery_posts")
+                .select(`
+                    *,
+                    profiles (
+                        group_name,
+                        avatar_url
+                    ),
+                    gallery_likes (
+                        user_id
+                    )
+                `)
+                .order("created_at", { ascending: false });
+
+            if (data) {
+                setPosts(data);
+            }
+        } catch (e) {
+            console.error("Error fetching posts", e);
+        }
+    };
+
+    const toggleLike = async (postId: string, hasLiked: boolean) => {
+        if (!currentUser) return toast.error("Inicia sesión para dar like");
+
+        if (hasLiked) {
+            await supabase.from("gallery_likes").delete().eq("post_id", postId).eq("user_id", currentUser.id);
+        } else {
+            await supabase.from("gallery_likes").insert({ post_id: postId, user_id: currentUser.id });
+        }
+        // Optimistic UI update or refetch
+        fetchPosts();
+    };
 
     const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         // ... existing check ...

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Map, MessageCircle, Image, Home, Smile, ShoppingBag } from "lucide-react";
+import { Map, MessageCircle, Image, Home, Smile, ShoppingBag, Package } from "lucide-react";
 import { motion } from "framer-motion";
 
 const navItems = [
@@ -11,6 +11,7 @@ const navItems = [
     { href: "/shop", icon: ShoppingBag, label: "Tienda", color: "text-purple-400" },
     { href: "/map", icon: Map, label: "Mapa", color: "text-accent" },
     { href: "/chat", icon: MessageCircle, label: "Chat", color: "text-green-400" },
+    { href: "/inventory", icon: Package, label: "Mis Objetos", color: "text-orange-400" },
     { href: "/jokes", icon: Smile, label: "Bromas", color: "text-yellow-400" },
 ];
 
