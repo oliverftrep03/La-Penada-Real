@@ -8,81 +8,41 @@ import { useState } from "react";
 
 export default function Admin() {
     const { theme, updateTheme } = useTheme();
-    const [activeTab, setActiveTab] = useState<"design" | "users" | "shop">("design");
+    const [rewards, setRewards] = useState<any[]>([]);
+    const [editingReward, setEditingReward] = useState<any>(null);
+
+    const [activeTab, setActiveTab] = useState<"design" | "users" | "shop" | "rewards">("design");
     const [uploading, setUploading] = useState(false);
 
     // Estados GAME MASTER
-    const [selectedUser, setSelectedUser] = useState<any>(null); // Placeholder
-    const [users, setUsers] = useState([{ id: 1, username: "El Kike", xp: 45, level: 5 }]); // Fake data por ahora
+    const [selectedUser, setSelectedUser] = useState<any>(null);
+    const [users, setUsers] = useState([{ id: 1, username: "El Kike", xp: 45, level: 5 }]);
 
     // Estados TIENDA
     const [items, setItems] = useState<any[]>([]);
     const [newItem, setNewItem] = useState({ name: "", price: 100, rarity: "common", type: "frame" });
 
-    const loadItems = async () => {
-        const { data } = await supabase.from("items").select("*").order("id");
-        if (data) setItems(data);
+    const loadRewards = async () => {
+        const { data } = await supabase.from("reward_definitions").select("*").order("slot_index");
+        if (data) setRewards(data);
     };
 
-    const createItem = async () => {
-        const { error } = await supabase.from("items").insert([newItem]);
+    const updateReward = async () => {
+        if (!editingReward) return;
+        const { error } = await supabase
+            .from("reward_definitions")
+            .update({ name: editingReward.name, description: editingReward.description })
+            .eq("id", editingReward.id);
+
         if (!error) {
-            alert("Item creado!");
-            setNewItem({ name: "", price: 100, rarity: "common", type: "frame" });
-            loadItems();
+            alert("Recompensa actualizada");
+            setEditingReward(null);
+            loadRewards();
         } else {
-            alert("Error: " + error.message);
+            console.error(error);
+            alert("Error al guardar");
         }
     };
-
-    const deleteItem = async (id: number) => {
-        if (!confirm("¿Borrar item?")) return;
-        const { error } = await supabase.from("items").delete().eq("id", id);
-        if (!error) loadItems();
-    };
-
-    // ... (Funciones de diseño existentes) ...
-
-    const handleGiveXP = (amount: number) => {
-        alert(`Has dado ${amount} XP a ${selectedUser?.username || "nadie"}`);
-        // Lógica real vendría aquí
-    };
-
-    const handleColorChange = (key: keyof typeof theme.colors, value: string) => {
-        updateTheme({
-            colors: { ...theme.colors, [key]: value }
-        });
-    };
-
-    const handleImageUpload = async (section: keyof typeof theme.backgrounds, file: File) => {
-        // ... (mismo código que tenías) ...
-        try {
-            setUploading(true);
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${section}-${Math.random()}.${fileExt}`;
-            const filePath = `${fileName}`;
-
-            const { error: uploadError } = await supabase.storage
-                .from('uploads')
-                .upload(filePath, file);
-
-            if (uploadError) throw uploadError;
-
-            const { data } = supabase.storage
-                .from('uploads')
-                .getPublicUrl(filePath);
-
-            updateTheme({
-                backgrounds: { ...theme.backgrounds, [section]: data.publicUrl }
-            });
-
-        } catch (error) {
-            alert("Error: " + (error as any).message);
-        } finally {
-            setUploading(false);
-        }
-    };
-
 
     return (
         <div className="min-h-screen bg-black text-white pb-24 p-6 overflow-y-auto">
@@ -106,6 +66,12 @@ export default function Admin() {
                         className={`px-3 py-1 rounded-md text-sm font-bold whitespace-nowrap ${activeTab === "shop" ? "bg-primary text-black" : "text-gray-400"}`}
                     >
                         🛒 Tienda
+                    </button>
+                    <button
+                        onClick={() => { setActiveTab("rewards"); loadRewards(); }}
+                        className={`px-3 py-1 rounded-md text-sm font-bold whitespace-nowrap ${activeTab === "rewards" ? "bg-primary text-black" : "text-gray-400"}`}
+                    >
+                        🏆 Recompensas
                     </button>
                 </div>
             </header>
@@ -175,45 +141,10 @@ export default function Admin() {
                             ))}
                         </div>
                     </section>
-
-                    {selectedUser && (
-                        <section className="space-y-4">
-                            <div className="p-4 bg-gray-900 rounded-xl border border-primary/30">
-                                <h3 className="text-primary font-graffiti text-xl mb-2">Dar Experiencia</h3>
-                                <div className="flex gap-2 flex-wrap">
-                                    {[1, 5, 10].map(amount => (
-                                        <button
-                                            key={amount}
-                                            onClick={() => handleGiveXP(amount)}
-                                            className="flex-1 bg-white/10 hover:bg-primary hover:text-black py-2 rounded-lg font-bold transition-colors"
-                                        >
-                                            +{amount} XP
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="p-4 bg-gray-900 rounded-xl border border-yellow-500/30">
-                                <h3 className="text-yellow-500 font-graffiti text-xl mb-2">Gestionar Trofeos</h3>
-                                <p className="text-xs text-gray-500 mb-2">Haz clic para dar/quitar trofeo</p>
-                                <div className="grid grid-cols-6 gap-1">
-                                    {[...Array(27)].map((_, i) => (
-                                        <button
-                                            key={i}
-                                            className="aspect-square bg-black border border-white/20 rounded flex items-center justify-center hover:border-yellow-500"
-                                            onClick={() => alert(`Trofeo ${i + 1} cambiado para ${selectedUser.username}`)}
-                                        >
-                                            <Trophy className="w-3 h-3 text-gray-600" />
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        </section>
-                    )}
                 </div>
             )}
 
-            {/* PESTAÑA TIENDA (NUEVA) */}
+            {/* PESTAÑA TIENDA */}
             {activeTab === "shop" && (
                 <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
                     {/* Crear Item */}
@@ -250,6 +181,76 @@ export default function Admin() {
                                 <button onClick={() => deleteItem(item.id)} className="text-red-500 text-xs border border-red-500/50 px-2 py-1 rounded hover:bg-red-500 hover:text-white">BORRAR</button>
                             </div>
                         ))}
+                    </div>
+                </div>
+            )}
+
+            {/* PESTAÑA RECOMPENSAS (NUEVA) */}
+            {activeTab === "rewards" && (
+                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
+                    <div className="glass-panel p-5 bg-yellow-500/10 border-yellow-500/30">
+                        <h2 className="font-bold text-xl text-yellow-500 mb-4 flex items-center gap-2">
+                            <Trophy /> Editor de Trofeos y Logros
+                        </h2>
+
+                        {editingReward ? (
+                            <div className="bg-black/80 p-6 rounded-xl border border-yellow-500 space-y-4">
+                                <h3 className="font-bold text-lg">Editando: {editingReward.slot_index}. {editingReward.type}</h3>
+                                <div className="space-y-2">
+                                    <label className="text-xs text-gray-400">Nombre</label>
+                                    <input
+                                        className="w-full p-3 bg-white/10 rounded-lg border border-white/20 focus:border-yellow-500 outline-none"
+                                        value={editingReward.name}
+                                        onChange={e => setEditingReward({ ...editingReward, name: e.target.value })}
+                                    />
+                                    <label className="text-xs text-gray-400">Descripción</label>
+                                    <textarea
+                                        className="w-full p-3 bg-white/10 rounded-lg border border-white/20 focus:border-yellow-500 outline-none"
+                                        value={editingReward.description}
+                                        onChange={e => setEditingReward({ ...editingReward, description: e.target.value })}
+                                    />
+                                </div>
+                                <div className="flex gap-2">
+                                    <button onClick={updateReward} className="flex-1 bg-yellow-500 text-black font-bold py-3 rounded-lg hover:bg-yellow-400">GUARDAR CAMBIOS</button>
+                                    <button onClick={() => setEditingReward(null)} className="px-4 py-3 bg-white/10 rounded-lg hover:bg-white/20">Cancelar</button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                {/* Trofeos */}
+                                <div>
+                                    <h3 className="font-graffiti text-2xl text-yellow-400 mb-4 text-center">🏆 Trofeos (30)</h3>
+                                    <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                                        {rewards.filter(r => r.type === 'trophy').map(r => (
+                                            <div key={r.id} onClick={() => setEditingReward(r)} className="flex items-center gap-3 p-3 bg-white/5 rounded-lg border border-white/10 hover:border-yellow-500 cursor-pointer transition-colors group">
+                                                <span className="font-mono text-xs text-gray-500 w-6">#{r.slot_index}</span>
+                                                <div className="flex-1">
+                                                    <div className="font-bold text-sm group-hover:text-yellow-400">{r.name}</div>
+                                                    <div className="text-xs text-gray-400 truncate">{r.description}</div>
+                                                </div>
+                                                <Trophy className="w-4 h-4 text-yellow-600" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                {/* Logros */}
+                                <div>
+                                    <h3 className="font-graffiti text-2xl text-purple-400 mb-4 text-center">⭐ Logros (30)</h3>
+                                    <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                                        {rewards.filter(r => r.type === 'achievement').map(r => (
+                                            <div key={r.id} onClick={() => setEditingReward(r)} className="flex items-center gap-3 p-3 bg-white/5 rounded-lg border border-white/10 hover:border-purple-500 cursor-pointer transition-colors group">
+                                                <span className="font-mono text-xs text-gray-500 w-6">#{r.slot_index}</span>
+                                                <div className="flex-1">
+                                                    <div className="font-bold text-sm group-hover:text-purple-400">{r.name}</div>
+                                                    <div className="text-xs text-gray-400 truncate">{r.description}</div>
+                                                </div>
+                                                <Medal className="w-4 h-4 text-purple-600" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

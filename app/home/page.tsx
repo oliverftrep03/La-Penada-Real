@@ -5,14 +5,41 @@ import { motion } from "framer-motion";
 import { Crown, Menu, User, Settings, LogOut } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabaseClient";
+import Image from "next/image";
 
 export default function Home() {
     const { theme } = useTheme();
     const [showMenu, setShowMenu] = useState(false);
+    const [recentPosts, setRecentPosts] = useState<any[]>([]);
+    const [userName, setUserName] = useState("Amigo");
 
     // Datos simulados por ahora
     const lastEvent = { title: "Cervezas en el Centro", date: "Hoy 20:30", location: "Plaza Mayor" };
+
+    useEffect(() => {
+        fetchRecentPosts();
+        getUserName();
+    }, []);
+
+    const getUserName = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+            const { data } = await supabase.from('profiles').select('group_name').eq('id', session.user.id).single();
+            if (data) setUserName(data.group_name);
+        }
+    };
+
+    const fetchRecentPosts = async () => {
+        const { data } = await supabase
+            .from("gallery_posts")
+            .select("photo_url, id")
+            .order("created_at", { ascending: false })
+            .limit(4);
+
+        if (data) setRecentPosts(data);
+    };
 
     return (
         <div
@@ -67,7 +94,7 @@ export default function Home() {
                 <header className="flex justify-between items-center">
                     <div>
                         <h1 className="text-3xl font-graffiti text-primary">La Peñada</h1>
-                        <p className="text-gray-400 text-sm font-urban">Bienvenido, <span className="text-white font-bold">Kike</span></p>
+                        <p className="text-gray-400 text-sm font-urban">Bienvenido, <span className="text-white font-bold">{userName}</span></p>
                     </div>
                     <button
                         onClick={() => setShowMenu(true)}
@@ -95,13 +122,18 @@ export default function Home() {
                 <div className="space-y-4">
                     <h3 className="font-urban text-sm font-bold text-gray-400 uppercase tracking-widest">Últimas Fotos</h3>
                     <div className="grid grid-cols-2 gap-3">
-                        {[1, 2, 3, 4].map((i) => (
-                            <div key={i} className="aspect-square bg-gray-800 rounded-xl overflow-hidden border border-white/10 relative group">
-                                <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-all" />
-                                {/* Placeholder imgs */}
-                                <img src={`https://picsum.photos/400?random=${i}`} alt="Foto" className="w-full h-full object-cover" />
-                            </div>
-                        ))}
+                        {recentPosts.length > 0 ? (
+                            recentPosts.map((post) => (
+                                <Link href="/gallery" key={post.id}>
+                                    <div className="aspect-square bg-gray-800 rounded-xl overflow-hidden border border-white/10 relative group">
+                                        <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-all" />
+                                        <Image src={post.photo_url} alt="Foto reciente" fill className="object-cover" />
+                                    </div>
+                                </Link>
+                            ))
+                        ) : (
+                            <p className="text-xs text-gray-500 col-span-2 text-center py-4">Sin fotos aún. ¡Sube la primera!</p>
+                        )}
                     </div>
                 </div>
             </div>
