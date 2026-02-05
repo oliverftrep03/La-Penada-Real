@@ -20,7 +20,7 @@ export default function Admin() {
 
     // Estados TIENDA
     const [items, setItems] = useState<any[]>([]);
-    const [newItem, setNewItem] = useState({ name: "", price: 100, rarity: "common", type: "frame", content: "", image_url: "" });
+    const [newItem, setNewItem] = useState({ name: "", price: 100, rarity: "common", type: "frame", content: "", image_url: "", description: "" });
 
     const handleShopImageUpload = async (file: File) => {
         setUploading(true);
@@ -87,7 +87,7 @@ export default function Admin() {
             alert("Error creando item");
         } else {
             alert("Ítem creado en Tienda");
-            setNewItem({ name: "", price: 100, rarity: "common", type: "frame", content: "", image_url: "" });
+            setNewItem({ name: "", price: 100, rarity: "common", type: "frame", content: "", image_url: "", description: "" });
             loadItems();
         }
     };
@@ -259,6 +259,16 @@ export default function Admin() {
                                     <option value="map_icon">Icono Mapa</option>
                                     <option value="collectible">Coleccionable</option>
                                 </select>
+                            </div>
+
+                            <div className="col-span-2 space-y-2">
+                                <label className="text-xs text-gray-400">Descripción</label>
+                                <textarea
+                                    placeholder="Detalles épicos del artículo..."
+                                    className="w-full p-2 bg-black/50 rounded border border-white/10 resize-none h-20"
+                                    value={newItem.description || ""}
+                                    onChange={e => setNewItem({ ...newItem, description: e.target.value })}
+                                />
                             </div>
 
                             <div className="space-y-2">

@@ -60,18 +60,22 @@ export default function GalleryPage() {
         if (!session) return;
 
         // Fetch purchased frames
-        const { data } = await supabase
-            .from("user_inventory")
-            .select(`
-                item_id,
-                store_items!inner(id, name, type, content)
-            `)
-            .eq("user_id", session.user.id)
-            .eq("store_items.type", "frame");
+        try {
+            const { data } = await supabase
+                .from("user_inventory")
+                .select(`
+                    item_id,
+                    store_items!inner(id, name, type, content)
+                `)
+                .eq("user_id", session.user.id)
+                .eq("store_items.type", "frame");
 
-        if (data) {
-            const purchased = data.map((i: any) => i.store_items);
-            setMyFrames([{ id: 'basic', name: 'Básico', content: 'border-0' }, ...purchased]);
+            if (data) {
+                const purchased = data.map((i: any) => i.store_items);
+                setMyFrames([{ id: 'basic', name: 'Básico', content: 'border-0' }, ...purchased]);
+            }
+        } catch (e) {
+            console.error("Error fetching frames", e);
         }
     };
 
@@ -193,8 +197,20 @@ export default function GalleryPage() {
 
                 {posts.map((post) => {
                     const hasLiked = post.gallery_likes.some(l => l.user_id === currentUser?.id);
-                    // Use frame_style directly or fallback to basic border
-                    const frameClass = post.frame_style && post.frame_style !== 'basic' ? post.frame_style : "border-0";
+
+                    // Logic to handle legacy "gold", "red" etc vs new full CSS classes
+                    let frameClass = "border-0";
+                    if (post.frame_style) {
+                        // @ts-ignore
+                        if (frames[post.frame_style]) {
+                            // Legacy lookup
+                            // @ts-ignore
+                            frameClass = frames[post.frame_style];
+                        } else {
+                            // Modern: Raw CSS class from DB
+                            frameClass = post.frame_style;
+                        }
+                    }
 
                     const timeAgo = formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: es });
 
