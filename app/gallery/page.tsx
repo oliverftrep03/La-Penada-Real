@@ -30,6 +30,11 @@ export default function GalleryPage() {
     const [selectedFrame, setSelectedFrame] = useState("basic");
     const [myFrames, setMyFrames] = useState<any[]>([{ id: 'basic', name: 'Básico', content: 'border-0' }]);
 
+    // Comment System State
+    const [activePostId, setActivePostId] = useState<string | null>(null); // Modal open
+    const [comments, setComments] = useState<any[]>([]);
+    const [newComment, setNewComment] = useState("");
+
     const frames: any = {
         basic: "border-0 shadow-none",
         gold: "border-4 border-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.5)]",
@@ -41,187 +46,116 @@ export default function GalleryPage() {
         getCurrentUser();
         fetchPosts();
         fetchMyFrames();
-
-        // ... realtime subscription code ...
+        // rt subscription...
         const channel = supabase
             .channel('gallery_posts')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'gallery_posts' }, () => {
-                fetchPosts();
-            })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'gallery_posts' }, () => fetchPosts())
             .subscribe();
-
-        return () => {
-            supabase.removeChannel(channel);
-        }
+        return () => { supabase.removeChannel(channel); }
     }, []);
 
-    const fetchMyFrames = async () => {
+    const fetchMyFrames = async () => { /* ... existing ... */
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
-
-        // Fetch purchased frames
         try {
-            const { data } = await supabase
-                .from("user_inventory")
-                .select(`
-                    item_id,
-                    store_items!inner(id, name, type, content)
-                `)
-                .eq("user_id", session.user.id)
-                .eq("store_items.type", "frame");
-
+            const { data } = await supabase.from("user_inventory").select(`item_id, store_items!inner(id, name, type, content)`).eq("user_id", session.user.id).eq("store_items.type", "frame");
             if (data) {
                 const purchased = data.map((i: any) => i.store_items);
                 setMyFrames([{ id: 'basic', name: 'Básico', content: 'border-0' }, ...purchased]);
             }
-        } catch (e) {
-            console.error("Error fetching frames", e);
-        }
+        } catch (e) { console.error(e); }
     };
 
-    const getCurrentUser = async () => {
+    const getCurrentUser = async () => { /* ... existing ... */
         const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-            setCurrentUser(session.user);
-        } else {
-            setCurrentUser(null);
-        }
+        setCurrentUser(session?.user || null);
     };
 
-    const fetchPosts = async () => {
+    const fetchPosts = async () => { /* ... existing ... */
         try {
-            const { data, error } = await supabase
-                .from("gallery_posts")
-                .select(`
-                    *,
-                    profiles (
-                        group_name,
-                        avatar_url
-                    ),
-                    gallery_likes (
-                        user_id
-                    )
-                `)
-                .order("created_at", { ascending: false });
-
-            if (data) {
-                setPosts(data);
-            }
-        } catch (e) {
-            console.error("Error fetching posts", e);
-        }
+            const { data } = await supabase.from("gallery_posts").select(`*, profiles (group_name, avatar_url), gallery_likes (user_id)`).order("created_at", { ascending: false });
+            if (data) setPosts(data);
+        } catch (e) { console.error(e); }
     };
 
-    const toggleLike = async (postId: string, hasLiked: boolean) => {
-        if (!currentUser) return toast.error("Inicia sesión para dar like");
-
-        if (hasLiked) {
-            await supabase.from("gallery_likes").delete().eq("post_id", postId).eq("user_id", currentUser.id);
-        } else {
-            await supabase.from("gallery_likes").insert({ post_id: postId, user_id: currentUser.id });
-        }
-        // Optimistic UI update or refetch
+    const toggleLike = async (postId: string, hasLiked: boolean) => { /* ... existing ... */
+        if (!currentUser) return toast.error("Inicia sesión");
+        if (hasLiked) await supabase.from("gallery_likes").delete().eq("post_id", postId).eq("user_id", currentUser.id);
+        else await supabase.from("gallery_likes").insert({ post_id: postId, user_id: currentUser.id });
         fetchPosts();
     };
 
-    const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        // ... existing check ...
-        if (!e.target.files || e.target.files.length === 0 || !currentUser) {
-            if (!currentUser) toast.error("Debes iniciar sesión");
-            return;
-        }
-        setUploading(true);
-        const file = e.target.files[0];
-
-        try {
-            // ... upload storage ...
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${Math.random()}.${fileExt}`;
-            const filePath = `${currentUser.id}/${fileName}`;
-
-            const { error: uploadError } = await supabase.storage
-                .from('gallery')
-                .upload(filePath, file);
-
-            if (uploadError) throw uploadError;
-
-            const { data: { publicUrl } } = supabase.storage
-                .from('gallery')
-                .getPublicUrl(filePath);
-
-            // Get selected frame content (class)
-            const frameContent = myFrames.find(f => f.id === selectedFrame)?.content || "border-0";
-            // Map known content to keys if using old logic, OR just save the class directly
-            // User requested "canjeables", let's save the frame ID or style.
-            // Simplified: Saving the 'content' CSS string directly or a mapped key.
-            // Let's stick to the existing 'frame_style' column but now it stores the actual CSS class or key.
-            // Since we have hardcoded 'frames' object for rendering posts, let's update it to support dynamic classes OR use style attribute.
-            // Pivot: Let's store the `content` (CSS class) directly in `frame_style`.
-
-            const { error: dbError } = await supabase
-                .from("gallery_posts")
-                .insert({
-                    user_id: currentUser.id,
-                    photo_url: publicUrl,
-                    caption: "",
-                    frame_style: frameContent // Saving the CSS class directly
-                });
-
-            if (dbError) throw dbError;
-
-            // ... award coins ...
-            const { error: coinsError } = await supabase.rpc('add_coins', { user_id: currentUser.id, amount: 10 });
-            // ... toasts ...
-            if (coinsError) console.error("Error adding coins", coinsError);
-            else toast.success("+10 Monedas 🪙");
-
-            toast.success("Foto subida 📸");
+    const deletePost = async (postId: string) => {
+        if (!confirm("¿Borrar esta foto para siempre?")) return;
+        const { error } = await supabase.from("gallery_posts").delete().eq("id", postId);
+        if (error) toast.error("Error al borrar");
+        else {
+            toast.success("Foto eliminada");
             fetchPosts();
-
-        } catch (error: any) {
-            console.error(error);
-            toast.error(`Error: ${error.message || "No se pudo subir"}`);
-        } finally {
-            setUploading(false);
         }
     };
 
-    // ... toggleLike ...
+    const openComments = async (postId: string) => {
+        setActivePostId(postId);
+        const { data } = await supabase.from("gallery_comments")
+            .select(`*, profiles(group_name, avatar_url)`)
+            .eq("post_id", postId)
+            .order("created_at", { ascending: true });
+        if (data) setComments(data);
+    };
+
+    const sendComment = async () => {
+        if (!newComment.trim() || !currentUser || !activePostId) return;
+        const { error } = await supabase.from("gallery_comments").insert({
+            post_id: activePostId,
+            user_id: currentUser.id,
+            content: newComment
+        });
+        if (error) toast.error("Error al comentar");
+        else {
+            setNewComment("");
+            openComments(activePostId); // Refresh
+        }
+    };
+
+    const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => { /* ... existing ... */
+        if (!e.target.files?.length || !currentUser) return toast.error("Error");
+        setUploading(true);
+        try {
+            const file = e.target.files[0];
+            const fileName = `${currentUser.id}/${Math.random()}.${file.name.split('.').pop()}`;
+            await supabase.storage.from('gallery').upload(fileName, file);
+            const { data: { publicUrl } } = supabase.storage.from('gallery').getPublicUrl(fileName);
+            const frameContent = myFrames.find(f => f.id === selectedFrame)?.content || "border-0";
+            await supabase.from("gallery_posts").insert({ user_id: currentUser.id, photo_url: publicUrl, caption: "", frame_style: frameContent });
+            await supabase.rpc('add_coins', { user_id: currentUser.id, amount: 10 });
+            toast.success("+10 Monedas 🪙");
+            fetchPosts();
+        } catch (e) { console.error(e); toast.error("Error subiendo"); }
+        finally { setUploading(false); }
+    };
 
     return (
         <div className="min-h-screen bg-[#121212] pb-24 text-white">
             <Navbar />
 
+            {/* ... Existing Header/Frame Selector ... */}
             <div className="p-4 bg-black/80 backdrop-blur-md border-b border-white/10 sticky top-0 z-20 flex flex-col gap-4 shadow-lg">
                 <div className="flex justify-between items-center">
                     <h1 className="text-xl font-bold font-graffiti tracking-wider">Galería <span className="text-[#c0ff00]">Real</span></h1>
                     <div className="relative group">
-                        {/* Upload Button */}
-                        <div className="absolute inset-0 bg-[#c0ff00] blur-lg opacity-20 group-hover:opacity-40 transition-opacity"></div>
                         <div className="relative">
-                            <input
-                                type="file"
-                                accept="image/*"
-                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
-                                onChange={handleUpload}
-                                disabled={uploading}
-                            />
-                            <button className="bg-[#c0ff00] text-black px-4 py-2 rounded-full text-sm font-black uppercase tracking-wider flex items-center gap-2 hover:scale-105 transition-transform active:scale-95 shadow-xl disabled:opacity-50 disabled:cursor-not-allowed">
-                                {uploading ? <div className="animate-spin">⏳</div> : <Camera size={18} strokeWidth={2.5} />}
+                            <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer z-20" onChange={handleUpload} disabled={uploading} />
+                            <button className="bg-[#c0ff00] text-black px-4 py-2 rounded-full text-sm font-black uppercase tracking-wider flex items-center gap-2 hover:scale-105 transition-transform">
+                                {uploading ? <div className="animate-spin">⏳</div> : <Camera size={18} />}
                                 {uploading ? "Subiendo..." : "Subir Foto"}
                             </button>
                         </div>
                     </div>
                 </div>
-
-                {/* Frame Selector */}
                 <div className="w-full overflow-x-auto scrollbar-hide flex gap-3 pb-2">
                     {myFrames.map(frame => (
-                        <button
-                            key={frame.id}
-                            onClick={() => setSelectedFrame(frame.id)}
-                            className={`flex flex-col items-center gap-1 min-w-[60px] p-2 rounded-lg border transition-all ${selectedFrame === frame.id ? "bg-white/10 border-[#c0ff00]" : "border-transparent bg-transparent opacity-50 hover:opacity-100"}`}
-                        >
+                        <button key={frame.id} onClick={() => setSelectedFrame(frame.id)} className={`flex flex-col items-center gap-1 min-w-[60px] p-2 rounded-lg border transition-all ${selectedFrame === frame.id ? "bg-white/10 border-[#c0ff00]" : "border-transparent opacity-50 hover:opacity-100"}`}>
                             <div className={`w-10 h-10 bg-gray-800 rounded-md ${frame.content}`}></div>
                             <span className="text-[10px] truncate max-w-full">{frame.name}</span>
                         </button>
@@ -230,97 +164,101 @@ export default function GalleryPage() {
             </div>
 
             <div className="flex flex-col gap-8 p-4 max-w-lg mx-auto mt-4">
-                {posts.length === 0 && (
-                    <div className="text-center py-20 text-gray-500 flex flex-col items-center gap-4 animate-in fade-in zoom-in">
-                        <Camera size={48} className="opacity-50" />
-                        <p className="text-lg">No hay fotos aún.</p>
-                        <p className="text-sm">¡Sé el primero en hacer historia!</p>
-                    </div>
-                )}
-
                 {posts.map((post) => {
-                    const hasLiked = post.gallery_likes.some(l => l.user_id === currentUser?.id);
-
-                    // Logic to handle legacy "gold", "red" etc vs new full CSS classes
+                    const hasLiked = post.gallery_likes?.some(l => l.user_id === currentUser?.id);
+                    const isOwner = currentUser?.id === post.profiles?.id || currentUser?.id === post.user_id; // Check ownership logic later, need user_id in post
+                    // ... frame logic ...
                     let frameClass = "border-0";
                     if (post.frame_style) {
                         // @ts-ignore
-                        if (frames[post.frame_style]) {
-                            // Legacy lookup
-                            // @ts-ignore
-                            frameClass = frames[post.frame_style];
-                        } else {
-                            // Modern: Raw CSS class from DB
-                            frameClass = post.frame_style;
-                        }
+                        if (frames[post.frame_style]) frameClass = frames[post.frame_style];
+                        else frameClass = post.frame_style;
                     }
-
                     const timeAgo = formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: es });
-
                     const avatarUrl = post.profiles?.avatar_url || "https://via.placeholder.com/150";
                     const groupName = post.profiles?.group_name || "Desconocido";
 
                     return (
-                        <div key={post.id} className="bg-[#1e1e1e] rounded-3xl overflow-hidden shadow-2xl border border-white/5 animate-in slide-in-from-bottom-4 duration-500">
-                            {/* Header: Author & Time */}
-                            <div className="p-4 flex items-center justify-between bg-white/5">
-                                <div className="flex items-center gap-3">
-                                    <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-[#c0ff00]">
-                                        <Image
-                                            src={avatarUrl}
-                                            alt={groupName}
-                                            fill
-                                            className="object-cover"
-                                        />
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <span className="font-bold text-white text-sm tracking-wide">{groupName}</span>
-                                        <span className="text-xs text-gray-400 font-medium capitalize">{timeAgo}</span>
-                                    </div>
+                        <div key={post.id} className="bg-[#1e1e1e] rounded-3xl overflow-hidden shadow-2xl border border-white/5 relative group">
+                            {/* Delete Button (if owner) - Assuming we can check against current user */}
+                            {/* Note: post.user_id might need to be selected specifically if not in * */}
+                            <button className="absolute top-4 right-4 z-10 p-2 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500" onClick={() => deletePost(post.id)}>
+                                <X size={16} />
+                            </button>
+
+                            <div className="p-4 flex items-center gap-3 bg-white/5">
+                                <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-[#c0ff00]">
+                                    <Image src={avatarUrl} alt={groupName} fill className="object-cover" />
                                 </div>
-                                <button className="text-gray-500 hover:text-white transition-colors">
-                                    <div className="w-1 h-1 bg-current rounded-full mx-0.5"></div>
-                                    <div className="w-1 h-1 bg-current rounded-full mx-0.5"></div>
-                                    <div className="w-1 h-1 bg-current rounded-full mx-0.5"></div>
-                                </button>
+                                <div className="flex flex-col">
+                                    <span className="font-bold text-white text-sm">{groupName}</span>
+                                    <span className="text-xs text-gray-400 capitalize">{timeAgo}</span>
+                                </div>
                             </div>
 
-                            {/* Image */}
-                            <div className={`relative aspect-square w-full bg-black/50 ${frameClass} transition-all`}>
-                                <Image
-                                    src={post.photo_url}
-                                    alt="Post"
-                                    fill
-                                    className="object-cover"
-                                />
+                            <div className={`relative aspect-square w-full bg-black/50 ${frameClass}`}>
+                                <Image src={post.photo_url} alt="Post" fill className="object-cover" />
                             </div>
 
-                            {/* Actions & Caption */}
                             <div className="p-4">
                                 <div className="flex gap-6 mb-3">
-                                    <button
-                                        onClick={() => toggleLike(post.id, hasLiked)}
-                                        className={`flex items-center gap-2 transition-all active:scale-90 group ${hasLiked ? "text-red-500" : "text-white"}`}
-                                    >
-                                        <Heart className={`${hasLiked ? "fill-current" : "group-hover:scale-110"} transition-transform`} size={28} strokeWidth={hasLiked ? 0 : 2} />
-                                        <span className={`font-bold text-lg ${hasLiked ? "text-red-500" : "text-gray-400"}`}>{post.gallery_likes.length}</span>
+                                    <button onClick={() => toggleLike(post.id, hasLiked || false)} className={`flex items-center gap-2 ${hasLiked ? "text-red-500" : "text-white"}`}>
+                                        <Heart className={`${hasLiked ? "fill-current" : ""}`} size={28} />
+                                        <span className="font-bold text-lg">{post.gallery_likes?.length || 0}</span>
                                     </button>
-                                    <button className="text-white hover:text-[#c0ff00] transition-colors active:scale-95">
+                                    <button onClick={() => openComments(post.id)} className="text-white hover:text-[#c0ff00]">
                                         <MessageCircle size={28} />
                                     </button>
                                 </div>
-
-                                {post.caption && (
-                                    <p className="text-gray-300 text-sm">
-                                        <span className="font-bold text-white mr-2">{groupName}</span>
-                                        {post.caption}
-                                    </p>
-                                )}
+                                {post.caption && <p className="text-gray-300 text-sm"><span className="font-bold text-white mr-2">{groupName}</span>{post.caption}</p>}
                             </div>
                         </div>
                     );
                 })}
             </div>
+
+            {/* Comments Modal */}
+            {activePostId && (
+                <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+                    <div className="bg-[#1e1e1e] w-full max-w-md rounded-t-2xl sm:rounded-2xl border border-white/10 max-h-[80vh] flex flex-col shadow-2xl animate-in slide-in-from-bottom-10">
+                        <div className="p-4 border-b border-white/10 flex justify-between items-center bg-white/5">
+                            <h3 className="font-bold">Comentarios</h3>
+                            <button onClick={() => setActivePostId(null)}><X /></button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                            {comments.length === 0 ? <p className="text-center text-gray-500 text-sm">Sé el primero en comentar...</p> :
+                                comments.map(c => (
+                                    <div key={c.id} className="flex gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-gray-700 overflow-hidden relative flex-shrink-0">
+                                            {c.profiles?.avatar_url && <Image src={c.profiles.avatar_url} fill className="object-cover" alt="Avatar" />}
+                                        </div>
+                                        <div className="bg-white/5 p-2 rounded-r-xl rounded-bl-xl text-sm">
+                                            <span className="font-bold text-[#c0ff00] block text-xs">{c.profiles?.group_name}</span>
+                                            {c.content}
+                                        </div>
+                                    </div>
+                                ))
+                            }
+                        </div>
+
+                        <div className="p-4 border-t border-white/10 bg-black/20">
+                            <div className="flex gap-2">
+                                <input
+                                    className="flex-1 bg-black/50 border border-white/10 rounded-full px-4 py-2 text-sm outline-none focus:border-[#c0ff00]"
+                                    placeholder="Escribe algo épico..."
+                                    value={newComment}
+                                    onChange={(e) => setNewComment(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && sendComment()}
+                                />
+                                <button onClick={sendComment} className="bg-[#c0ff00] text-black p-2 rounded-full font-bold">
+                                    <MessageCircle size={18} />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Image from "next/image";
 import Navbar from "@/components/Navbar";
-import { Edit2, LogOut, Shield, Zap } from "lucide-react";
+import { Edit2, LogOut, Shield, Zap, X } from "lucide-react";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 export default function ProfilePage() {
     const router = useRouter();
@@ -79,9 +80,117 @@ export default function ProfilePage() {
     const trophies = rewards.filter(r => r.type === 'trophy');
     const achievements = rewards.filter(r => r.type === 'achievement');
 
+    const [editing, setEditing] = useState(false);
+    const [myPhotos, setMyPhotos] = useState<any[]>([]);
+    const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+    useEffect(() => {
+        if (profile?.featured_photos) {
+            setSelectedPhotos(profile.featured_photos);
+        }
+    }, [profile]);
+
+    const handleEditOpen = async () => {
+        setEditing(true);
+        // Fetch user's gallery photos for selection
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+            const { data } = await supabase.from("gallery_posts").select("*").eq("user_id", session.user.id).order("created_at", { ascending: false });
+            if (data) setMyPhotos(data);
+        }
+    };
+
+    const togglePhotoSelection = (url: string) => {
+        if (selectedPhotos.includes(url)) {
+            setSelectedPhotos(prev => prev.filter(p => p !== url));
+        } else {
+            if (selectedPhotos.length >= 3) return toast.error("Máximo 3 fotos destacadas");
+            setSelectedPhotos(prev => [...prev, url]);
+        }
+    };
+
+    const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files?.length) return;
+        setUploadingAvatar(true);
+        const file = e.target.files[0];
+        try {
+            const fileName = `${profile.id}/avatar_${Math.random()}`;
+            await supabase.storage.from('avatars').upload(fileName, file);
+            const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(fileName);
+
+            await supabase.from("profiles").update({ avatar_url: publicUrl }).eq("id", profile.id);
+            setProfile({ ...profile, avatar_url: publicUrl });
+            toast.success("Avatar actualizado");
+        } catch (e) { console.error(e); toast.error("Error al subir avatar"); }
+        finally { setUploadingAvatar(false); }
+    };
+
+    const saveProfile = async () => {
+        const { error } = await supabase.from("profiles").update({ featured_photos: selectedPhotos }).eq("id", profile.id);
+        if (error) toast.error("Error al guardar");
+        else {
+            toast.success("Perfil actualizado");
+            setProfile({ ...profile, featured_photos: selectedPhotos });
+            setEditing(false);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-[#000000] text-white pb-24">
             <Navbar />
+
+            {/* Edit Modal */}
+            {editing && (
+                <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+                    <div className="bg-[#1a1a1a] w-full max-w-lg rounded-2xl border border-white/10 p-6 max-h-[90vh] overflow-y-auto">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-xl font-bold font-graffiti text-[#c0ff00]">Editar Perfil</h2>
+                            <button onClick={() => setEditing(false)}><X /></button>
+                        </div>
+
+                        <div className="space-y-6">
+                            {/* Avatar */}
+                            <div>
+                                <label className="block text-sm text-gray-400 mb-2">Foto de Perfil</label>
+                                <div className="flex items-center gap-4">
+                                    <div className="w-16 h-16 rounded-full bg-gray-800 overflow-hidden relative border border-white/20">
+                                        {profile?.avatar_url && <Image src={profile.avatar_url} fill className="object-cover" alt="Avatar" />}
+                                    </div>
+                                    <label className="bg-white/10 px-4 py-2 rounded-lg text-sm cursor-pointer hover:bg-white/20 transition-colors">
+                                        {uploadingAvatar ? "Subiendo..." : "Cambiar Foto"}
+                                        <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploadingAvatar} />
+                                    </label>
+                                </div>
+                            </div>
+
+                            {/* Featured Photos */}
+                            <div>
+                                <label className="block text-sm text-gray-400 mb-2">Fotos Destacadas ({selectedPhotos.length}/3)</label>
+                                <div className="grid grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 bg-black/20 rounded-lg border border-white/5">
+                                    {myPhotos.map(photo => (
+                                        <div
+                                            key={photo.id}
+                                            onClick={() => togglePhotoSelection(photo.photo_url)}
+                                            className={`relative aspect-square cursor-pointer rounded-md overflow-hidden border-2 ${selectedPhotos.includes(photo.photo_url) ? 'border-[#c0ff00] opacity-100' : 'border-transparent opacity-50 hover:opacity-100'}`}
+                                        >
+                                            <Image src={photo.photo_url} fill className="object-cover" alt="Thumb" />
+                                            {selectedPhotos.includes(photo.photo_url) && (
+                                                <div className="absolute top-1 right-1 w-4 h-4 bg-[#c0ff00] rounded-full flex items-center justify-center text-black text-[10px] font-bold">✓</div>
+                                            )}
+                                        </div>
+                                    ))}
+                                    {myPhotos.length === 0 && <p className="col-span-3 text-center text-gray-500 text-xs py-4">Sube fotos a la galería para destacarlas aquí.</p>}
+                                </div>
+                            </div>
+
+                            <button onClick={saveProfile} className="w-full bg-[#c0ff00] text-black font-bold py-3 rounded-xl hover:scale-[1.02] transition-transform">
+                                GUARDAR CAMBIOS
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Cover */}
             <div className="h-40 w-full bg-gradient-to-r from-[#c0ff00]/20 via-[#c0ff00]/5 to-black relative">
@@ -98,7 +207,7 @@ export default function ProfilePage() {
                             <Image src={profile.avatar_url} alt="Profile" fill className="object-cover" />
                         )}
                     </div>
-                    <button className="absolute bottom-1 right-1 z-20 bg-[#c0ff00] text-black p-2 rounded-full border-4 border-black shadow-lg">
+                    <button onClick={handleEditOpen} className="absolute bottom-1 right-1 z-20 bg-[#c0ff00] text-black p-2 rounded-full border-4 border-black shadow-lg hover:scale-110 transition-transform">
                         <Edit2 size={16} />
                     </button>
                     {/* Level Badge */}
@@ -134,6 +243,22 @@ export default function ProfilePage() {
                         </div>
                     </div>
                 </div>
+
+                {/* FEATURED PHOTOS */}
+                {profile?.featured_photos && profile.featured_photos.length > 0 && (
+                    <div className="mt-6">
+                        <h3 className="text-sm text-gray-400 font-bold mb-3 uppercase tracking-wider flex items-center gap-2">
+                            📸 Destacadas
+                        </h3>
+                        <div className="grid grid-cols-3 gap-2">
+                            {profile.featured_photos.map((url: string, i: number) => (
+                                <div key={i} className="aspect-[3/4] rounded-lg overflow-hidden relative border border-white/10 bg-white/5">
+                                    <Image src={url} fill className="object-cover" alt="Featured" />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {/* TROPHIES */}
                 <div className="mt-8">

@@ -9,8 +9,8 @@ const navItems = [
     { href: "/home", icon: Home, label: "Inicio", color: "text-primary" },
     { href: "/gallery", icon: Image, label: "Fotos", color: "text-secondary" },
     { href: "/shop", icon: ShoppingBag, label: "Tienda", color: "text-purple-400" },
-    { href: "/map", icon: Map, label: "Mapa", color: "text-accent" },
     { href: "/chat", icon: MessageCircle, label: "Chat", color: "text-green-400" },
+    { href: "/map", icon: Map, label: "Mapa", color: "text-accent" },
     { href: "/inventory", icon: Package, label: "Mis Objetos", color: "text-orange-400" },
     { href: "/jokes", icon: Smile, label: "Bromas", color: "text-yellow-400" },
 ];
