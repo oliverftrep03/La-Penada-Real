@@ -41,6 +41,13 @@ export default function Home() {
                         </div>
                     </Link>
 
+                    <Link href="/gallery" onClick={() => setShowMenu(false)}>
+                        <div className="bg-white/10 p-4 rounded-xl flex items-center gap-4 text-white hover:bg-white/20 transition-all text-left">
+                            <span className="text-2xl">📸</span>
+                            <span className="font-urban text-xl font-bold">Galería Real</span>
+                        </div>
+                    </Link>
+
                     <button onClick={() => alert("Próximamente: Conectar Google")} className="bg-white/10 p-4 rounded-xl flex items-center gap-4 text-white hover:bg-white/20 transition-all text-left">
                         <span className="text-2xl">⚡</span>
                         <span className="font-urban text-xl font-bold">Iniciar con Google</span>
