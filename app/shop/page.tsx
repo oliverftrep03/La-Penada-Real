@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import toast from "react-hot-toast";
 import { X, Gift } from "lucide-react";
+import LootChest from "@/components/LootChest";
 
 export default function ShopPage() {
     const [items, setItems] = useState<any[]>([]);
@@ -128,26 +129,27 @@ export default function ShopPage() {
                             </div>
                         </div>
 
+
+
                         {/* My Chests */}
-                        <div className="flex-1 bg-white/5 p-4 rounded-xl border border-white/10">
-                            <h3 className="font-bold text-white mb-2">Mis Cofres ({myChests.length})</h3>
-                            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                                {myChests.length === 0 && <p className="text-gray-500 text-xs italic">No tienes cofres cerrados.</p>}
+                        <div className="flex-1 bg-white/5 p-6 rounded-xl border border-white/10 min-h-[160px] flex flex-col justify-center">
+                            <h3 className="font-bold text-white mb-4 flex items-center gap-2">
+                                🎒 Mis Cofres <span className="text-[#c0ff00] bg-[#c0ff00]/10 px-2 rounded text-xs">{myChests.length}</span>
+                            </h3>
+                            <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide items-center">
+                                {myChests.length === 0 && (
+                                    <div className="text-gray-500 text-sm italic w-full text-center py-4 border-2 border-dashed border-white/10 rounded-xl">
+                                        No tienes cofres pendientes.
+                                    </div>
+                                )}
                                 {myChests.map(chest => (
-                                    <button
+                                    <LootChest
                                         key={chest.id}
+                                        type={chest.type}
                                         onClick={() => handleOpenChest(chest.id)}
-                                        disabled={openingChest === chest.id}
-                                        className="relative group min-w-[60px]"
-                                    >
-                                        <div className={`w-14 h-14 bg-gradient-to-b from-yellow-600 to-yellow-800 rounded-lg border-2 border-yellow-400 flex items-center justify-center text-2xl shadow-lg transform transition-transform ${openingChest === chest.id ? 'animate-bounce' : 'group-hover:-translate-y-1'}`}>
-                                            🔒
-                                        </div>
-                                        {/* Type Badge */}
-                                        <span className="absolute -bottom-1 -right-1 bg-red-600 text-[8px] font-bold px-1 rounded text-white border border-black">
-                                            {chest.type === 'welcome' ? 'FREE' : 'LVL'}
-                                        </span>
-                                    </button>
+                                        opening={openingChest === chest.id}
+                                        disabled={openingChest !== null && openingChest !== chest.id}
+                                    />
                                 ))}
                             </div>
                         </div>

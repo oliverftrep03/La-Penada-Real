@@ -41,12 +41,15 @@ begin
   end if;
 end $$;
 
--- 5. Fix Profile Update Policy (Address "Save" error)
+-- 5. Fix Profile Update Policy (FORCE UPDATE)
 do $$
 begin
-  if not exists (select 1 from pg_policies where policyname = 'Enable update for users based on id' and tablename = 'profiles') then
-    create policy "Enable update for users based on id" on profiles for update using (auth.uid() = id);
-  end if;
+  -- Drop potential conflicting or old policies
+  drop policy if exists "Enable update for users based on id" on profiles;
+  drop policy if exists "Users update own profile" on profiles;
+  
+  -- Create the permissive update policy
+  create policy "Enable update for users based on id" on profiles for update using (auth.uid() = id);
 end $$;
 
 -- 6. LOOT CHEST SYSTEM
