@@ -257,6 +257,9 @@ export default function GalleryPage() {
 
                     const timeAgo = formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: es });
 
+                    const avatarUrl = post.profiles?.avatar_url || "https://via.placeholder.com/150";
+                    const groupName = post.profiles?.group_name || "Desconocido";
+
                     return (
                         <div key={post.id} className="bg-[#1e1e1e] rounded-3xl overflow-hidden shadow-2xl border border-white/5 animate-in slide-in-from-bottom-4 duration-500">
                             {/* Header: Author & Time */}

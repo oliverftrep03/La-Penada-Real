@@ -4,7 +4,8 @@ import Navbar from "@/components/Navbar";
 import { supabase } from "@/lib/supabaseClient";
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { Package, User } from "lucide-react";
+import { Package, User, Trash2 } from "lucide-react";
+import toast from "react-hot-toast";
 
 export default function InventoryPage() {
     const [inventory, setInventory] = useState<any[]>([]);

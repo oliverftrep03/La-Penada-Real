@@ -30,6 +30,7 @@ create policy "Admin manages store" on store_items for all using (true); -- Simp
 -- Inventario: Ver el propio
 create policy "View own inventory" on user_inventory for select using (auth.uid() = user_id);
 create policy "Add to inventory (buying)" on user_inventory for insert with check (auth.uid() = user_id);
+create policy "Delete own inventory" on user_inventory for delete using (auth.uid() = user_id);
 
 -- 4. FunciÃ³n segura para añadir monedas
 create or replace function add_coins(user_id uuid, amount int)
