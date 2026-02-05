@@ -143,30 +143,48 @@ export default function LoginPage() {
                             type="password"
                             placeholder="Introduce el Código Real"
                             className="bg-gray-900 border border-gray-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:border-[#c0ff00] transistion-colors text-center"
-                            onKeyDown={async (e) => {
+                            onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
-                                    const code = e.currentTarget.value;
-                                    if (code === 'Peñaseña') {
-                                        toast.loading("Verificando...");
-                                        const { error } = await supabase.auth.signInAnonymously();
-                                        if (error) {
-                                            toast.dismiss();
-                                            toast.error("Error de autenticación anónima. Habilítala en Supabase.");
-                                            console.error(error);
-                                        } else {
-                                            toast.success("Código aceptado.");
-                                            checkSession();
-                                        }
-                                    } else {
-                                        toast.error("Código incorrecto. No eres digno.");
-                                    }
+                                    handleManualLogin(e.currentTarget.value);
                                 }
                             }}
+                            onChange={(e) => {
+                                // Optional: You could update state here if you wanted a controlled component, 
+                                // but for now we extract value from event or ref. 
+                                // Since we pass value in onKeyDown, this is fine.
+                                // For the button we need a ref or state. Let's use a simple state.
+                            }}
+                            id="manual-code-input"
                         />
-                        <p className="text-xs text-gray-600">Presiona ENTER para validar</p>
+                        <button
+                            onClick={() => {
+                                const input = document.getElementById('manual-code-input') as HTMLInputElement;
+                                handleManualLogin(input.value);
+                            }}
+                            className="bg-[#c0ff00] text-black font-bold py-2 rounded-lg hover:bg-[#a0d600] transition-colors"
+                        >
+                            Entrar
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
     );
+
+    async function handleManualLogin(code: string) {
+        if (code === 'Peñaseña') {
+            toast.loading("Verificando...");
+            const { error } = await supabase.auth.signInAnonymously();
+            if (error) {
+                toast.dismiss();
+                toast.error("Error de autenticación anónima. Habilítala en Supabase.");
+                console.error(error);
+            } else {
+                toast.success("Código aceptado.");
+                checkSession();
+            }
+        } else {
+            toast.error("Código incorrecto. No eres digno.");
+        }
+    }
 }
