@@ -11,6 +11,8 @@ export default function ProfilePage() {
     const router = useRouter();
     const [rewards, setRewards] = useState<any[]>([]);
     const [userUnlocks, setUserUnlocks] = useState<Set<string>>(new Set());
+    const [profile, setProfile] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         fetchProfile();
