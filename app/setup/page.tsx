@@ -56,7 +56,7 @@ export default function SetupPage() {
             .from("profiles")
             .insert({
                 id: user.id,
-                email: user.email,
+                email: user.email || null,
                 group_name: selectedName,
                 avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
                 description: "Nuevo miembro de la realeza.",
