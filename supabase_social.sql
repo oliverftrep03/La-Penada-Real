@@ -65,11 +65,18 @@ create table if not exists user_chests (
 -- RLS for user_chests
 alter table user_chests enable row level security;
 
-do $$
-begin
   if not exists (select 1 from pg_policies where policyname = 'View own chests' and tablename = 'user_chests') then
     create policy "View own chests" on user_chests for select using (auth.uid() = user_id);
   end if;
+end $$;
+
+-- 7. Fix User Inventory Deletion (User Request)
+alter table user_inventory enable row level security;
+do $$
+begin
+    if not exists (select 1 from pg_policies where policyname = 'Delete own items' and tablename = 'user_inventory') then
+        create policy "Delete own items" on user_inventory for delete using (auth.uid() = user_id);
+    end if;
 end $$;
 
 -- Function to claim Welcome Chest (1 per user)

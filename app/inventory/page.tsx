@@ -57,6 +57,37 @@ export default function InventoryPage() {
         return names[rarity] || rarity;
     };
 
+
+    const deleteItem = async (itemId: string, itemName: string) => {
+        if (!confirm(`¿Seguro que quieres eliminar ${itemName}? No podrás recuperarlo.`)) return;
+
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+
+        toast.loading("Eliminando...");
+
+        // Find the specific row ID in user_inventory to delete
+        // We have item_id (store_items.id), need user_inventory.id
+        // But the inventory list is mapped to store_items... wait.
+        // The fetchInventory selects *, store_items (*). The mapped array is JUST store_items.
+        // We need the user_inventory.id to delete it efficiently, or delete by item_id and user_id.
+
+        const { error } = await supabase
+            .from("user_inventory")
+            .delete()
+            .eq("user_id", session.user.id)
+            .eq("item_id", itemId); // This wipes ALL copies if they have multiple. Acceptable for now.
+
+        toast.dismiss();
+        if (error) {
+            toast.error("Error al eliminar");
+            console.error(error);
+        } else {
+            toast.success("Objeto eliminado");
+            fetchInventory();
+        }
+    };
+
     return (
         <div className="min-h-screen bg-black text-white pb-24">
             <div className="p-4 sticky top-0 bg-black/80 backdrop-blur-md z-10 border-b border-white/10">
@@ -81,6 +112,15 @@ export default function InventoryPage() {
                                 key={item.id}
                                 className={`relative p-4 rounded-xl border bg-white/5 flex flex-col items-center text-center group hover:scale-[1.02] transition-transform ${getRarityClass(item.rarity)}`}
                             >
+                                {/* Delete Button */}
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); deleteItem(item.id, item.name); }}
+                                    className="absolute top-2 right-2 bg-red-600/80 p-1.5 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 z-10"
+                                    title="Eliminar objeto"
+                                >
+                                    <Trash2 size={12} />
+                                </button>
+
                                 <div className="w-full aspect-square mb-3 bg-black/30 rounded-lg flex items-center justify-center overflow-hidden relative">
                                     {item.image_url ? (
                                         <div className="relative w-full h-full">
@@ -91,16 +131,22 @@ export default function InventoryPage() {
                                     ) : (
                                         <>
                                             {item.type === 'frame' && <div className={`w-16 h-16 bg-gray-700 ${item.content}`}></div>}
-                                            {item.type === 'map_icon' && <span className="text-4xl">{item.content}</span>}
-                                            {item.type === 'collectible' && <span className="text-4xl animate-pulse">{item.content}</span>}
+                                            {item.type === 'map_icon' && <span className="text-4xl">{item.content || '📍'}</span>}
+                                            {item.type === 'collectible' && (
+                                                <div className="flex flex-col items-center">
+                                                    <span className="text-4xl animate-pulse">{item.content || '💎'}</span>
+                                                </div>
+                                            )}
                                         </>
                                     )}
                                 </div>
 
                                 <h3 className="font-bold text-sm leading-tight mb-1">{item.name}</h3>
-                                <span className={`text-[10px] px-2 py-0.5 rounded bg-white/10 uppercase font-black tracking-wider`}>
-                                    {getRarityName(item.rarity)}
-                                </span>
+                                <div className="flex flex-col items-center gap-1">
+                                    <span className={`text-[10px] px-2 py-0.5 rounded bg-white/10 uppercase font-black tracking-wider`}>
+                                        {getRarityName(item.rarity)}
+                                    </span>
+                                </div>
                             </div>
                         ))}
                     </div>

@@ -251,11 +251,11 @@ export default function ProfilePage() {
                             📸 Destacadas
                         </h3>
                         <div className="grid grid-cols-3 gap-2">
-                            {profile.featured_photos.map((url: string, i: number) => (
+                            {profile.featured_photos?.map((url: string, i: number) => (
                                 <div key={i} className="aspect-[3/4] rounded-lg overflow-hidden relative border border-white/10 bg-white/5">
                                     <Image src={url} fill className="object-cover" alt="Featured" />
                                 </div>
-                            ))}
+                            )) || <p className="col-span-3 text-gray-500 text-xs text-center py-4">No hay fotos destacadas.</p>}
                         </div>
                     </div>
                 )}
