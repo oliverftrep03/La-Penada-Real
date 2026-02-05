@@ -120,11 +120,8 @@ body {
     linear-gradient(45deg, #e5e7eb, #ffffff, #9ca3af, #e5e7eb) border-box;
   box-shadow:
     0 0 0 2px #000,
-    /* separation */
     0 0 30px rgba(255, 255, 255, 0.4),
-    /* outer glow */
     inset 0 0 20px rgba(255, 255, 255, 0.3);
-  /* inner shine */
   position: relative;
   overflow: visible !important;
   animation: chrome-shine 3s linear infinite;
