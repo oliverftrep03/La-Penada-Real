@@ -1,29 +1,22 @@
+"use client";
+
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { supabase } from "@/lib/supabaseClient";
 import { Toaster } from "react-hot-toast";
 
-// ... existing code ...
-
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-    // ... existing hook logic ...
-
-    return (
-        <ThemeContext.Provider value={{ theme, updateTheme }}>
-            {children}
-            <Toaster position="bottom-center" />
-        </ThemeContext.Provider>
-    );
-}
-colors: {
-    primary: string;
-    secondary: string;
-    accent: string;
-};
-backgrounds: {
-    home: string;
-    chat: string;
-    map: string;
-    gallery: string;
-    jokes: string;
-};
+interface AppTheme {
+    colors: {
+        primary: string;
+        secondary: string;
+        accent: string;
+    };
+    backgrounds: {
+        home: string;
+        chat: string;
+        map: string;
+        gallery: string;
+        jokes: string;
+    };
 }
 
 const defaultTheme: AppTheme = {
@@ -104,6 +97,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     return (
         <ThemeContext.Provider value={{ theme, updateTheme }}>
             {children}
+            <Toaster position="bottom-center" />
         </ThemeContext.Provider>
     );
 }
