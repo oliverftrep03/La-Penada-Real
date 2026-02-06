@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Permanent_Marker } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { Toaster } from "react-hot-toast";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-urban" });
 const permanentMarker = Permanent_Marker({
@@ -46,7 +46,6 @@ export default function RootLayout({
                     <main className="max-w-md mx-auto min-h-screen relative overflow-hidden shadow-2xl bg-[#121212]">
                         {children}
                     </main>
-                    <Toaster position="bottom-center" />
                 </ThemeProvider>
             </body>
         </html>
