@@ -8,7 +8,14 @@ export async function middleware(req: NextRequest) {
     try {
         // 1. Initialize Supabase Client to refresh session cookies
         // Only if environment variables are set
-        if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        // 1. Initialize Supabase Client to refresh session cookies
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+        // Check for placeholder or missing URL
+        const isPlaceholder = supabaseUrl?.includes("placeholder.supabase.co");
+
+        if (supabaseUrl && supabaseKey && !isPlaceholder) {
             const supabase = createMiddlewareClient({ req, res })
             await supabase.auth.getSession()
         }
