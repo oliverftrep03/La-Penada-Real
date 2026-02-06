@@ -207,7 +207,10 @@ export default function LoginPage() {
     );
 
     async function handleManualLogin(code: string) {
-        if (!supabase) return;
+        if (!supabase) {
+            toast.error("Error crítico: Conexión a Base de Datos no inicializada.");
+            return;
+        }
 
         if (code === 'Peñaseña') {
             toast.loading("Verificando...");

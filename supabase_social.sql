@@ -186,6 +186,8 @@ end $$;
 -- 8. Add Image URL to Store Items
 do $$
 begin
+  if not exists (select 1 from information_schema.columns where table_name = 'store_items' and column_name = 'image_url') then
+    alter table store_items add column image_url text;
   end if;
 end $$;
 
