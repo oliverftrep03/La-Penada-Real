@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Permanent_Marker } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { ThemeProvider } from "@/components/ThemeProvider";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-urban" });
 const permanentMarker = Permanent_Marker({
