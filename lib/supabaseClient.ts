@@ -1,13 +1,29 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
 
-export const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey && supabaseUrl !== "https://placeholder.supabase.co");
+// Robust check: Ensure URL is valid and not placeholder
+const isValidUrl = (url: string | undefined) => {
+    if (!url) return false;
+    try {
+        new URL(url);
+        return url !== "https://placeholder.supabase.co";
+    } catch {
+        return false;
+    }
+};
 
-// Export typed client or null. 
-// We use 'any' to avoid strict null checks breaking consumers immediately, 
-// but we expect consumers to handle the 'Setup Required' state if this is used.
-export const supabase = isSupabaseConfigured
-    ? createClient(supabaseUrl!, supabaseAnonKey!)
-    : null; // Consumers must handle null if config is missing
+export const isSupabaseConfigured = isValidUrl(supabaseUrl) && !!supabaseAnonKey;
+
+// Safe client creation
+let client = null;
+try {
+    if (isSupabaseConfigured) {
+        client = createClient(supabaseUrl!, supabaseAnonKey!);
+    }
+} catch (e) {
+    console.error("Supabase Client Init Error:", e);
+}
+
+export const supabase = client;

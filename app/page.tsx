@@ -12,6 +12,7 @@ import toast from "react-hot-toast";
 export default function LoginPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
+    const [manualCode, setManualCode] = useState("");
 
     useEffect(() => {
         // Stop if not configured
@@ -179,40 +180,35 @@ export default function LoginPage() {
                     </div>
 
                     {/* Manual Code Section */}
-                    <div className="flex flex-col gap-2">
+                    <form
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            handleManualLogin(manualCode);
+                        }}
+                        className="flex flex-col gap-2"
+                    >
                         <input
                             type="password"
                             placeholder="Introduce el Código Real"
                             className="bg-gray-900 border border-gray-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:border-[#c0ff00] transistion-colors text-center"
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                    handleManualLogin(e.currentTarget.value);
-                                }
-                            }}
-                            onChange={(e) => {
-                                // Optional: You could update state here if you wanted a controlled component, 
-                                // but for now we extract value from event or ref. 
-                                // Since we pass value in onKeyDown, this is fine.
-                                // For the button we need a ref or state. Let's use a simple state.
-                            }}
-                            id="manual-code-input"
+                            value={manualCode}
+                            onChange={(e) => setManualCode(e.target.value)}
                         />
                         <button
-                            onClick={() => {
-                                const input = document.getElementById('manual-code-input') as HTMLInputElement;
-                                handleManualLogin(input.value);
-                            }}
+                            type="submit"
                             className="bg-[#c0ff00] text-black font-bold py-2 rounded-lg hover:bg-[#a0d600] transition-colors"
                         >
                             Entrar
                         </button>
-                    </div>
+                    </form>
                 </div>
             </div>
         </div>
     );
 
     async function handleManualLogin(code: string) {
+        if (!supabase) return;
+
         if (code === 'Peñaseña') {
             toast.loading("Verificando...");
             const { error } = await supabase.auth.signInAnonymously();
