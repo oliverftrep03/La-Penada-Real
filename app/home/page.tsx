@@ -6,7 +6,7 @@ import { Crown, Menu, User, Settings, LogOut } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
 import Image from "next/image";
 
 export default function Home() {
@@ -19,6 +19,10 @@ export default function Home() {
     const [isHighlighted, setIsHighlighted] = useState(false);
 
     useEffect(() => {
+        if (!isSupabaseConfigured) {
+            window.location.href = "/"; // Force reload/redirect to landing
+            return;
+        }
         fetchRecentPosts();
         getUserName();
         fetchSpot();

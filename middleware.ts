@@ -7,9 +7,11 @@ export async function middleware(req: NextRequest) {
 
     try {
         // 1. Initialize Supabase Client to refresh session cookies
-        // This keeps the user logged in.
-        const supabase = createMiddlewareClient({ req, res })
-        await supabase.auth.getSession()
+        // Only if environment variables are set
+        if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+            const supabase = createMiddlewareClient({ req, res })
+            await supabase.auth.getSession()
+        }
 
         // 2. NO SERVER-SIDE REDIRECTS to avoid loops.
         // We rely entirely on the Client Side (app/page.tsx) to handle routing.

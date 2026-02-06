@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
 import Image from "next/image";
 import Navbar from "@/components/Navbar";
 import { Edit2, LogOut, Shield, Zap, X } from "lucide-react";
@@ -17,6 +17,10 @@ export default function ProfilePage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        if (!isSupabaseConfigured) {
+            window.location.href = "/";
+            return;
+        }
         fetchProfile();
         fetchRewards();
         fetchCollectibles();

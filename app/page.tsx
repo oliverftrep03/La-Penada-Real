@@ -3,10 +3,10 @@
 export const dynamic = "force-dynamic";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertTriangle } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function LoginPage() {
@@ -14,11 +14,17 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        // Stop if not configured
+        if (!isSupabaseConfigured) {
+            setLoading(false);
+            return;
+        }
+
         // Check initial session
         checkSession();
 
         // Listen for auth changes (login, logout, etc.)
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        const { data: { subscription } } = supabase!.auth.onAuthStateChange((event, session) => {
             if (event === 'SIGNED_IN' && session) {
                 checkSession();
             }
@@ -30,6 +36,8 @@ export default function LoginPage() {
     }, []);
 
     const checkSession = async () => {
+        if (!supabase) return;
+
         const { data: { session } } = await supabase.auth.getSession();
 
         if (session) {
@@ -53,6 +61,8 @@ export default function LoginPage() {
     };
 
     const handleGoogleLogin = async () => {
+        if (!supabase) return;
+
         const { error } = await supabase.auth.signInWithOAuth({
             provider: "google",
             options: {
@@ -69,6 +79,37 @@ export default function LoginPage() {
             console.error(error);
         }
     };
+
+    // SETUP REQUIRED SCREEN (Vercel Fix)
+    if (!isSupabaseConfigured) {
+        return (
+            <div className="flex h-screen w-full flex-col items-center justify-center bg-black text-white p-6 text-center">
+                <AlertTriangle className="h-16 w-16 text-yellow-500 mb-6 animate-pulse" />
+                <h1 className="text-3xl font-bold mb-4 font-mono">Configuración Requerida</h1>
+                <p className="text-gray-400 max-w-lg mb-8">
+                    La aplicación se ha desplegado correctamente, pero no puede conectar con la base de datos.
+                </p>
+                <div className="bg-[#1a1a1a] p-6 rounded-xl border border-white/10 text-left w-full max-w-lg">
+                    <h3 className="font-bold text-[#c0ff00] mb-2">Pasos para arreglar en Vercel:</h3>
+                    <ol className="list-decimal list-inside space-y-2 text-sm text-gray-300">
+                        <li>Ve a tu proyecto en <strong>Vercel Dashboard</strong>.</li>
+                        <li>Entra en <strong>Settings</strong> {'>'} <strong>Environment Variables</strong>.</li>
+                        <li>Añade las siguientes claves (cópialas de tu archivo <code>.env.local</code> o de Supabase):</li>
+                    </ol>
+                    <div className="mt-4 space-y-2 bg-black p-4 rounded border border-white/5 font-mono text-xs text-gray-500">
+                        <div>NEXT_PUBLIC_SUPABASE_URL</div>
+                        <div>NEXT_PUBLIC_SUPABASE_ANON_KEY</div>
+                    </div>
+                </div>
+                <button
+                    onClick={() => window.location.reload()}
+                    className="mt-8 bg-white text-black px-6 py-2 rounded-full font-bold hover:scale-105 transition-transform"
+                >
+                    Recargar Página
+                </button>
+            </div>
+        );
+    }
 
     if (loading) {
         return (
