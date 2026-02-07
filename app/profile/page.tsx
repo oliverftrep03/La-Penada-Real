@@ -2,11 +2,29 @@
 
 import { useEffect, useState } from "react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
-import Image from "next/image";
+// import Image from "next/image"; // Removed to prevent crashes
 import Navbar from "@/components/Navbar";
 import { Edit2, LogOut, Shield, Zap, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
+
+// Helpers
+const getXpRequirement = (lvl: any) => {
+    const level = Number(lvl) || 1;
+    if (level < 10) return Math.max(10, level * 10);
+    return 90 + ((level - 9) * 15);
+};
+
+const getLevelTitle = (lvl: any) => {
+    const level = Number(lvl) || 1;
+    if (level >= 50) return "Sacristan de la Peñada Real";
+    if (level >= 40) return "Peñonrado";
+    if (level >= 30) return "Cabo de la Peñiscola";
+    if (level >= 20) return "Peñista Experimentado";
+    if (level >= 10) return "Peñaprendiz";
+    if (level >= 5) return "Blandengue de la Peñada";
+    return "Recién Llegado";
+};
 
 export default function ProfilePage() {
     const router = useRouter();
@@ -17,61 +35,134 @@ export default function ProfilePage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        console.log("ProfilePage: Mounted");
         if (!isSupabaseConfigured) {
+            console.warn("ProfilePage: Supabase not configured");
             window.location.href = "/";
             return;
         }
-        fetchProfile();
-        fetchRewards();
-        fetchCollectibles();
+
+        // Execute fetches safely
+        const loadData = async () => {
+            console.log("ProfilePage: Starting loadData...");
+            try {
+                await fetchProfile(); // Critical
+                console.log("ProfilePage: fetchProfile completed");
+            } catch (err) {
+                console.error("ProfilePage: fetchProfile FAILED", err);
+            }
+
+            // Secondary data (don't block UI)
+            fetchRewards().catch(e => console.warn("Failed to load rewards", e));
+            fetchCollectibles().catch(e => console.warn("Failed to load collectibles", e));
+        };
+
+        loadData();
     }, []);
 
     const fetchCollectibles = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-            const { data } = await supabase
-                .from("user_inventory")
-                .select(`
-                    id,
-                    store_items!inner(id, name, type, content, rarity, image_url)
-                `)
-                .eq("user_id", session.user.id)
-                .eq("store_items.type", "collectible");
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                const { data, error } = await supabase
+                    .from("user_inventory")
+                    .select(`
+                        id,
+                        store_items!inner(id, name, type, content, rarity, image_url)
+                    `)
+                    .eq("user_id", session.user.id)
+                    .eq("store_items.type", "collectible");
 
-            if (data) {
-                setCollectibles(data.map((i: any) => i.store_items));
+                if (error) throw error;
+                if (data) {
+                    // Filter out any null store_items or items causing render issues
+                    const safeItems = data
+                        .map((i: any) => i.store_items)
+                        .filter((item: any) => item && item.name);
+                    setCollectibles(safeItems);
+                }
             }
+        } catch (e) {
+            console.warn("Collectibles Fetch Error (Ignored):", e);
+            setCollectibles([]); // Ensure array
         }
     };
 
     const fetchRewards = async () => {
-        const { data: defs } = await supabase.from("reward_definitions").select("*").order("slot_index");
-        if (defs) setRewards(defs);
-
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-            const { data: unlocks } = await supabase.from("user_rewards").select("reward_id").eq("user_id", session.user.id);
-            if (unlocks) {
-                setUserUnlocks(new Set(unlocks.map(u => u.reward_id)));
+        try {
+            // Safe fetch definitions
+            const { data: defs, error: defsError } = await supabase.from("reward_definitions").select("*").order("slot_index");
+            if (!defsError && defs) {
+                setRewards(defs);
+            } else {
+                setRewards([]); // Fallback
             }
+
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                const { data: unlocks, error: unlocksError } = await supabase.from("user_rewards").select("reward_id").eq("user_id", session.user.id);
+                if (!unlocksError && unlocks) {
+                    setUserUnlocks(new Set(unlocks.map((u: any) => u.reward_id)));
+                }
+            }
+        } catch (e) {
+            console.warn("Rewards Fetch Error (Ignored):", e);
+            setRewards([]);
         }
     };
 
     const fetchProfile = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-            router.push("/");
-            return;
+        try {
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            if (sessionError || !session) {
+                console.log("No session found in profile page.");
+                router.push("/");
+                return;
+            }
+
+            let { data, error } = await supabase
+                .from("profiles")
+                .select("*")
+                .eq("id", session.user.id)
+                .single();
+
+            // Auto-create/Fix profile if missing
+            if (!data) {
+                console.log("Profile missing, creating default...");
+                const defaultProfile = {
+                    id: session.user.id,
+                    group_name: session.user.email?.split('@')[0] || "Nuevo Miembro",
+                    description: "Miembro de La Peñada Real",
+                    level: 1,
+                    coins: 0,
+                    xp: 0,
+                    frames_unlocked: ["basic"],
+                    current_frame: "basic",
+                    avatar_url: ""
+                };
+
+                // Optimistic update
+                data = defaultProfile;
+
+                // Try to save to DB (Fire and forget to avoid blocking UI)
+                await supabase.from("profiles").upsert(defaultProfile).then(({ error }: { error: any }) => {
+                    if (error) console.error("Error creating default profile:", error);
+                });
+            }
+
+            setProfile(data);
+        } catch (e) {
+            console.error("Critical Profile Error:", e);
+            // Fallback purely client-side if everything fails
+            setProfile({
+                group_name: "Error User",
+                description: "Modo offline",
+                level: 1,
+                coins: 0
+            });
+        } finally {
+            setLoading(false);
         }
-
-        const { data } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", session.user.id)
-            .single();
-
-        setProfile(data);
-        setLoading(false);
     };
 
     const handleLogout = async () => {
@@ -163,17 +254,14 @@ export default function ProfilePage() {
                         </div>
 
                         <div className="space-y-6">
-                            {/* Avatar */}
+                            {/* Avatar (Removed Upload Feature as requested) */}
                             <div>
                                 <label className="block text-sm text-gray-400 mb-2">Foto de Perfil</label>
                                 <div className="flex items-center gap-4">
                                     <div className="w-16 h-16 rounded-full bg-gray-800 overflow-hidden relative border border-white/20">
-                                        {profile?.avatar_url && <Image src={profile.avatar_url} fill className="object-cover" alt="Avatar" />}
+                                        {profile?.avatar_url && <img src={profile.avatar_url} className="w-full h-full object-cover" alt="Avatar" />}
                                     </div>
-                                    <label className="bg-white/10 px-4 py-2 rounded-lg text-sm cursor-pointer hover:bg-white/20 transition-colors">
-                                        {uploadingAvatar ? "Subiendo..." : "Cambiar Foto"}
-                                        <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploadingAvatar} />
-                                    </label>
+                                    <span className="text-xs text-gray-500 italic">Gestión de avatar desactivada</span>
                                 </div>
                             </div>
 
@@ -187,7 +275,7 @@ export default function ProfilePage() {
                                             onClick={() => togglePhotoSelection(photo.photo_url)}
                                             className={`relative aspect-square cursor-pointer rounded-md overflow-hidden border-2 ${selectedPhotos.includes(photo.photo_url) ? 'border-[#c0ff00] opacity-100' : 'border-transparent opacity-50 hover:opacity-100'}`}
                                         >
-                                            <Image src={photo.photo_url} fill className="object-cover" alt="Thumb" />
+                                            <img src={photo.photo_url} className="w-full h-full object-cover" alt="Thumb" />
                                             {selectedPhotos.includes(photo.photo_url) && (
                                                 <div className="absolute top-1 right-1 w-4 h-4 bg-[#c0ff00] rounded-full flex items-center justify-center text-black text-[10px] font-bold">✓</div>
                                             )}
@@ -217,7 +305,7 @@ export default function ProfilePage() {
                 <div className="relative self-start">
                     <div className="w-32 h-32 rounded-full border-4 border-black bg-gray-800 relative z-10 overflow-hidden shadow-[0_0_20px_rgba(192,255,0,0.3)]">
                         {profile?.avatar_url && (
-                            <Image src={profile.avatar_url} alt="Profile" fill className="object-cover" />
+                            <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
                         )}
                     </div>
                     <button onClick={handleEditOpen} className="absolute bottom-1 right-1 z-20 bg-[#c0ff00] text-black p-2 rounded-full border-4 border-black shadow-lg hover:scale-110 transition-transform">
@@ -290,7 +378,7 @@ export default function ProfilePage() {
                         <div className="grid grid-cols-3 gap-2">
                             {profile.featured_photos?.map((url: string, i: number) => (
                                 <div key={i} className="aspect-[3/4] rounded-lg overflow-hidden relative border border-white/10 bg-white/5">
-                                    <Image src={url} fill className="object-cover" alt="Featured" />
+                                    <img src={url} className="w-full h-full object-cover" alt="Featured" />
                                 </div>
                             )) || <p className="col-span-3 text-gray-500 text-xs text-center py-4">No hay fotos destacadas.</p>}
                         </div>
@@ -352,7 +440,7 @@ export default function ProfilePage() {
                                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/diamond-upholstery.png')] opacity-20"></div>
                                 {item.image_url ? (
                                     <div className="relative w-full h-full p-2">
-                                        <Image src={item.image_url} fill className="object-contain p-2" alt={item.name} />
+                                        <img src={item.image_url} className="w-full h-full object-contain p-2" alt={item.name} />
                                     </div>
                                 ) : (
                                     <span className="text-4xl filter drop-shadow-[0_0_10px_rgba(34,211,238,0.5)] animate-pulse">{item.content || '💎'}</span>
@@ -392,19 +480,3 @@ export default function ProfilePage() {
 
     );
 }
-
-// Helpers
-const getXpRequirement = (lvl: number) => {
-    if (lvl < 10) return lvl * 10;
-    return 90 + ((lvl - 9) * 15);
-};
-
-const getLevelTitle = (lvl: number) => {
-    if (lvl >= 50) return "Sacristan de la Peñada Real";
-    if (lvl >= 40) return "Peñonrado";
-    if (lvl >= 30) return "Cabo de la Peñiscola";
-    if (lvl >= 20) return "Peñista Experimentado";
-    if (lvl >= 10) return "Peñaprendiz";
-    if (lvl >= 5) return "Blandengue de la Peñada";
-    return "Recién Llegado";
-};

@@ -25,7 +25,7 @@ export default function LoginPage() {
         checkSession();
 
         // Listen for auth changes (login, logout, etc.)
-        const { data: { subscription } } = supabase!.auth.onAuthStateChange((event, session) => {
+        const { data: { subscription } } = supabase!.auth.onAuthStateChange((event: string, session: any) => {
             if (event === 'SIGNED_IN' && session) {
                 checkSession();
             }
@@ -136,11 +136,17 @@ export default function LoginPage() {
 
             <div className="z-10 flex flex-col items-center gap-8 p-6 text-center animate-in fade-in zoom-in duration-500 w-full max-w-md">
                 {/* Logo / Title */}
-                <div className="space-y-4">
-                    <h1 className="font-graffiti text-5xl md:text-7xl text-[#c0ff00] drop-shadow-[0_0_15px_rgba(192,255,0,0.5)]">
-                        La Peñada
-                    </h1>
-                    <h2 className="text-3xl font-bold text-white tracking-widest uppercase">Real</h2>
+                <div className="space-y-4 flex flex-col items-center">
+                    <div className="relative w-48 h-48 rounded-2xl overflow-hidden border-4 border-[#c0ff00] shadow-[0_0_30px_rgba(192,255,0,0.3)] bg-black/50">
+                        <Image
+                            src="/logo.jpg"
+                            alt="La Peñada Real"
+                            fill
+                            className="object-cover"
+                            priority
+                        />
+                    </div>
+                    <h1 className="text-3xl font-graffiti text-white mt-4">La Peñada Real</h1>
                 </div>
 
                 <p className="max-w-xs text-gray-300 font-medium">

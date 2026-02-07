@@ -5,13 +5,20 @@ import { motion } from "framer-motion";
 import { Crown, Menu, User, Settings, LogOut } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
 import Image from "next/image";
 
 export default function Home() {
     const { theme } = useTheme();
+    const router = useRouter(); // Added router
     const [showMenu, setShowMenu] = useState(false);
+
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        router.push("/");
+    };
     const [recentPosts, setRecentPosts] = useState<any[]>([]);
     const [userName, setUserName] = useState("Amigo");
 
@@ -116,15 +123,25 @@ export default function Home() {
                             <span className="font-urban text-xl font-bold">Configuración (Admin)</span>
                         </div>
                     </Link>
+
+                    <button onClick={handleLogout} className="bg-red-500/10 p-4 rounded-xl flex items-center gap-4 text-red-500 hover:bg-red-500/20 transition-colors mt-auto">
+                        <LogOut className="w-8 h-8" />
+                        <span className="font-urban text-xl font-bold">Cerrar Sesión</span>
+                    </button>
                 </div>
             )}
 
             <div className="relative z-10 p-6 space-y-8">
                 {/* Header */}
-                <header className="flex justify-between items-center">
-                    <div>
-                        <h1 className="text-3xl font-graffiti text-primary">La Peñada</h1>
-                        <p className="text-gray-400 text-sm font-urban">Bienvenido, <span className="text-white font-bold">{userName}</span></p>
+                <header className="flex justify-between items-center bg-[#1a1a1a]/80 backdrop-blur-md p-4 rounded-2xl border border-white/10 shadow-lg">
+                    <div className="flex items-center gap-3">
+                        <div className="relative w-12 h-12 rounded-lg overflow-hidden border-2 border-[#c0ff00]">
+                            <Image src="/logo.jpg" alt="Logo" fill className="object-cover" />
+                        </div>
+                        <div>
+                            <h1 className="text-xl font-graffiti text-white leading-none">La Peñada</h1>
+                            <p className="text-gray-400 text-xs font-urban">Hola, <span className="text-[#c0ff00] font-bold">{userName}</span></p>
+                        </div>
                     </div>
                     <button
                         onClick={() => setShowMenu(true)}
