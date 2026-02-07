@@ -139,7 +139,7 @@ export default function LoginPage() {
                 <div className="space-y-4 flex flex-col items-center">
                     <div className="relative w-48 h-48 rounded-2xl overflow-hidden border-4 border-[#c0ff00] shadow-[0_0_30px_rgba(192,255,0,0.3)] bg-black/50">
                         <Image
-                            src="/logo.svg"
+                            src="/logo.jpg"
                             alt="La Peñada Real"
                             fill
                             className="object-cover"
