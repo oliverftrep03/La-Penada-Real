@@ -129,28 +129,11 @@ export default function ProfilePage() {
                 .eq("id", session.user.id)
                 .single();
 
-            // Auto-create/Fix profile if missing
+            // If profile missing (e.g. fresh Google Login), go to Setup/Recovery
             if (!data) {
-                console.log("Profile missing, creating default...");
-                const defaultProfile = {
-                    id: session.user.id,
-                    group_name: session.user.email?.split('@')[0] || "Nuevo Miembro",
-                    description: "Miembro de La Peñada Real",
-                    level: 1,
-                    coins: 0,
-                    xp: 0,
-                    frames_unlocked: ["basic"],
-                    current_frame: "basic",
-                    avatar_url: ""
-                };
-
-                // Optimistic update
-                data = defaultProfile;
-
-                // Try to save to DB (Fire and forget to avoid blocking UI)
-                await supabase.from("profiles").upsert(defaultProfile).then(({ error }: { error: any }) => {
-                    if (error) console.error("Error creating default profile:", error);
-                });
+                console.log("Profile missing, redirecting to Setup for Recovery...");
+                router.replace("/setup");
+                return;
             }
 
             setProfile(data);
