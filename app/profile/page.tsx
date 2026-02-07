@@ -170,11 +170,6 @@ export default function ProfilePage() {
         router.push("/");
     };
 
-    if (loading) return null;
-
-    const trophies = rewards.filter(r => r.type === 'trophy');
-    const achievements = rewards.filter(r => r.type === 'achievement');
-
     const [editing, setEditing] = useState(false);
     const [myPhotos, setMyPhotos] = useState<any[]>([]);
     const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
@@ -185,6 +180,16 @@ export default function ProfilePage() {
             setSelectedPhotos(profile.featured_photos);
         }
     }, [profile]);
+
+    // Early return ONLY after all hooks
+    if (loading) return (
+        <div className="flex h-screen items-center justify-center bg-black">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#c0ff00]"></div>
+        </div>
+    );
+
+    const trophies = rewards.filter(r => r.type === 'trophy');
+    const achievements = rewards.filter(r => r.type === 'achievement');
 
     const handleEditOpen = async () => {
         setEditing(true);
