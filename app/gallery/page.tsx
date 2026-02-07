@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Image from "next/image";
+import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import { Camera, Heart, MessageCircle, X } from "lucide-react";
 import toast from "react-hot-toast";
@@ -187,11 +188,13 @@ export default function GalleryPage() {
                             </button>
 
                             <div className="p-4 flex items-center gap-3 bg-white/5">
-                                <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-[#c0ff00]">
+                                <Link href={`/profile/${post.user_id}`} className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-[#c0ff00] hover:scale-105 transition-transform cursor-pointer">
                                     <Image src={avatarUrl} alt={groupName} fill className="object-cover" />
-                                </div>
+                                </Link>
                                 <div className="flex flex-col">
-                                    <span className="font-bold text-white text-sm">{groupName}</span>
+                                    <Link href={`/profile/${post.user_id}`} className="font-bold text-white text-sm hover:text-[#c0ff00] transition-colors cursor-pointer">
+                                        {groupName}
+                                    </Link>
                                     <span className="text-xs text-gray-400 capitalize">{timeAgo}</span>
                                 </div>
                             </div>

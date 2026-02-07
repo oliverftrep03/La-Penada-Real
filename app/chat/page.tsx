@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Image from "next/image";
+import Link from "next/link";
 import { Send, User } from "lucide-react";
 import Navbar from "@/components/Navbar";
 
@@ -115,7 +116,7 @@ export default function ChatPage() {
                     return (
                         <div key={msg.id} className={`flex gap-3 ${isMe ? "justify-end" : "justify-start"}`}>
                             {!isMe && (
-                                <div className="flex-shrink-0 mt-1">
+                                <Link href={`/profile/${msg.user_id}`} className="flex-shrink-0 mt-1 cursor-pointer hover:opacity-80 transition-opacity">
                                     {avatar ? (
                                         <div className="relative w-8 h-8 rounded-full overflow-hidden border border-white/20">
                                             <Image src={avatar} alt={name} fill className="object-cover" />
@@ -125,11 +126,15 @@ export default function ChatPage() {
                                             <User className="w-4 h-4 text-white" />
                                         </div>
                                     )}
-                                </div>
+                                </Link>
                             )}
 
                             <div className={`max-w-[75%] space-y-1 ${isMe ? "items-end flex flex-col" : ""}`}>
-                                {!isMe && <span className="text-xs text-gray-400 ml-1">{name}</span>}
+                                {!isMe && (
+                                    <Link href={`/profile/${msg.user_id}`} className="text-xs text-gray-400 ml-1 hover:text-[#c0ff00] cursor-pointer">
+                                        {name}
+                                    </Link>
+                                )}
                                 <div
                                     className={`
                                         p-3 rounded-2xl text-sm break-words
