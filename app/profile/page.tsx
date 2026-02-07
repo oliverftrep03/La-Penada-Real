@@ -141,8 +141,15 @@ export default function ProfilePage() {
             // Sync Email if missing (Fix for Issue 1)
             if (session.user.email && data.email !== session.user.email) {
                 console.log("Syncing email to profile...");
-                await supabase.from("profiles").update({ email: session.user.email }).eq("id", data.id);
-                setProfile({ ...data, email: session.user.email });
+                const { error: updateError } = await supabase.from("profiles").update({ email: session.user.email }).eq("id", data.id);
+
+                if (!updateError) {
+                    setProfile({ ...data, email: session.user.email });
+                } else {
+                    console.error("Error syncing email (RLS?):", updateError);
+                    // Force display even if DB update failed
+                    setProfile({ ...data, email: session.user.email });
+                }
             }
         } catch (e) {
             console.error("Critical Profile Error:", e);
@@ -150,6 +157,7 @@ export default function ProfilePage() {
             setProfile({
                 group_name: "Error User",
                 description: "Modo offline",
+                email: session?.user?.email, // Emergency email
                 level: 1,
                 coins: 0
             });
