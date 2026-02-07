@@ -21,6 +21,15 @@ export default function LoginPage() {
             return;
         }
 
+        // Check for URL errors
+        const params = new URLSearchParams(window.location.search);
+        const error = params.get('error');
+        const errorDesc = params.get('error_description');
+        if (error) {
+            toast.error(`Error de acceso: ${errorDesc || error}`);
+            console.error("Auth Error:", error, errorDesc);
+        }
+
         // Check initial session
         checkSession();
 
