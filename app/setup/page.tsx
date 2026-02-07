@@ -90,7 +90,7 @@ export default function SetupPage() {
         <div className="min-h-screen bg-black text-white p-6 flex flex-col items-center justify-center max-w-md mx-auto">
             <div className="text-center mb-10 space-y-2">
                 <Crown className="w-16 h-16 text-[#c0ff00] mx-auto mb-4 animate-bounce" />
-                <h1 className="text-3xl font-bold font-graffiti">Elige tu Identidad (v3)</h1>
+                <h1 className="text-3xl font-bold font-graffiti">Elige tu Identidad</h1>
                 <p className="text-gray-400">
                     Solo uno puede poseer cada nombre. <br /> Elige sabiamente.
                 </p>
