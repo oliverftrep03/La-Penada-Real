@@ -32,6 +32,9 @@ export default function ProfilePage() {
     const [userUnlocks, setUserUnlocks] = useState<Set<string>>(new Set());
     const [collectibles, setCollectibles] = useState<any[]>([]); // New state
     const [profile, setProfile] = useState<any>(null);
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
+    const [selectedTrophy, setSelectedTrophy] = useState<any>(null);
+
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -173,7 +176,36 @@ export default function ProfilePage() {
     const [editing, setEditing] = useState(false);
     const [myPhotos, setMyPhotos] = useState<any[]>([]);
     const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
-    const [uploadingAvatar, setUploadingAvatar] = useState(false);
+    {/* Trophy Details Modal */ }
+    {
+        selectedTrophy && (
+            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+                <div className="bg-[#1e1e1e] w-full max-w-sm rounded-2xl border border-yellow-500/30 p-6 shadow-[0_0_30px_rgba(234,179,8,0.2)] animate-in zoom-in-50">
+                    <div className="flex justify-end">
+                        <button onClick={() => setSelectedTrophy(null)} className="text-gray-400 hover:text-white"><X /></button>
+                    </div>
+                    <div className="flex flex-col items-center text-center gap-4">
+                        <div className="text-6xl animate-bounce">{selectedTrophy.icon}</div>
+                        <div>
+                            <h3 className="text-xl font-bold text-yellow-500 font-graffiti">{selectedTrophy.name}</h3>
+                            <div className={`text-xs font-bold uppercase tracking-widest mt-1 px-2 py-0.5 rounded-full inline-block ${userUnlocks.has(selectedTrophy.id) ? 'bg-yellow-500/20 text-yellow-500' : 'bg-gray-800 text-gray-500'}`}>
+                                {userUnlocks.has(selectedTrophy.id) ? 'Desbloqueado' : 'Bloqueado'}
+                            </div>
+                        </div>
+                        <p className="text-gray-300 text-sm leading-relaxed">
+                            {selectedTrophy.description || "Un misterioso trofeo esperando ser descubierto."}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
+    {/* ACHIEVEMENTS */ }
+    {/* ... (keep achievements logic same, just context) ... */
+        /* Actually, I am appending this at the end of content, wait. Replacing the Achievements section is easier if I include it or just insert before it  */
+        /* Let me re-read the file content to place it correctly. I will insert state at top and modal at bottom. */
+    }
 
     useEffect(() => {
         if (profile?.featured_photos) {
@@ -227,7 +259,10 @@ export default function ProfilePage() {
     };
 
     const saveProfile = async () => {
-        const { error } = await supabase.from("profiles").update({ featured_photos: selectedPhotos }).eq("id", profile.id);
+        const { error } = await supabase.from("profiles").update({
+            featured_photos: selectedPhotos,
+            description: profile.description
+        }).eq("id", profile.id);
         if (error) toast.error("Error al guardar");
         else {
             toast.success("Perfil actualizado");
@@ -296,6 +331,21 @@ export default function ProfilePage() {
                                         </div>
                                     ))}
                                     {myPhotos.length === 0 && <p className="col-span-3 text-center text-gray-500 text-xs py-4">Sube fotos a la galería para destacarlas aquí.</p>}
+                                </div>
+                            </div>
+
+                            {/* Description */}
+                            <div>
+                                <label className="block text-sm text-gray-400 mb-2">Biografía</label>
+                                <textarea
+                                    value={profile.description || ""}
+                                    onChange={(e) => setProfile({ ...profile, description: e.target.value })}
+                                    className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:border-[#c0ff00] outline-none resize-none h-24"
+                                    placeholder="Cuéntanos algo sobre ti..."
+                                    maxLength={150}
+                                />
+                                <div className="text-right text-xs text-gray-500 mt-1">
+                                    {(profile.description || "").length}/150
                                 </div>
                             </div>
 
@@ -408,7 +458,11 @@ export default function ProfilePage() {
                         {trophies.map((trophy) => {
                             const unlocked = userUnlocks.has(trophy.id);
                             return (
-                                <div key={trophy.id} className={`aspect-square rounded-lg border flex items-center justify-center relative group ${unlocked ? 'bg-yellow-500/10 border-yellow-500/50' : 'bg-white/5 border-white/10 grayscale opacity-50'}`}>
+                                <div
+                                    key={trophy.id}
+                                    onClick={() => setSelectedTrophy(trophy)}
+                                    className={`aspect-square rounded-lg border flex items-center justify-center relative group cursor-pointer transition-transform hover:scale-105 ${unlocked ? 'bg-yellow-500/10 border-yellow-500/50' : 'bg-white/5 border-white/10 grayscale opacity-50'}`}
+                                >
                                     <span className="text-2xl">{trophy.icon}</span>
                                     {unlocked && <div className="absolute inset-0 bg-yellow-500/20 blur-xl"></div>}
                                 </div>

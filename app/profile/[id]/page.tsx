@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Image from "next/image";
 import Navbar from "@/components/Navbar";
-import { Shield, Zap, ArrowLeft } from "lucide-react";
+import { Shield, Zap, ArrowLeft, X } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
@@ -38,6 +38,7 @@ export default function PublicProfilePage() {
     const [achievements, setAchievements] = useState<any[]>([]);
     const [userUnlocks, setUserUnlocks] = useState<Set<string>>(new Set());
     const [collectibles, setCollectibles] = useState<any[]>([]);
+    const [selectedTrophy, setSelectedTrophy] = useState<any>(null);
 
     useEffect(() => {
         if (userId) {
@@ -64,8 +65,8 @@ export default function PublicProfilePage() {
             // 2. Fetch Rewards Definitions
             const { data: rewards } = await supabase.from("reward_definitions").select("*");
             if (rewards) {
-                setTrophies(rewards.filter(r => r.type === 'trophy'));
-                setAchievements(rewards.filter(r => r.type === 'achievement'));
+                setTrophies(rewards.filter((r: any) => r.type === 'trophy'));
+                setAchievements(rewards.filter((r: any) => r.type === 'achievement'));
             }
 
             // 3. Fetch User Unlocks
@@ -214,7 +215,11 @@ export default function PublicProfilePage() {
                         {trophies.map((trophy) => {
                             const unlocked = userUnlocks.has(trophy.id);
                             return (
-                                <div key={trophy.id} className={`aspect-square rounded-lg border flex items-center justify-center relative group ${unlocked ? 'bg-yellow-500/10 border-yellow-500/50' : 'bg-white/5 border-white/10 grayscale opacity-50'}`}>
+                                <div
+                                    key={trophy.id}
+                                    onClick={() => setSelectedTrophy(trophy)}
+                                    className={`aspect-square rounded-lg border flex items-center justify-center relative group cursor-pointer transition-transform hover:scale-105 ${unlocked ? 'bg-yellow-500/10 border-yellow-500/50' : 'bg-white/5 border-white/10 grayscale opacity-50'}`}
+                                >
                                     <span className="text-2xl">{trophy.icon}</span>
                                     {unlocked && <div className="absolute inset-0 bg-yellow-500/20 blur-xl"></div>}
                                 </div>
@@ -247,6 +252,27 @@ export default function PublicProfilePage() {
                 </div>
 
             </div>
+
+            {/* Trophy Details Modal */}
+            {selectedTrophy && (
+                <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setSelectedTrophy(null)}>
+                    <div className="bg-[#1e1e1e] w-full max-w-sm rounded-2xl border border-yellow-500/30 p-6 shadow-[0_0_30px_rgba(234,179,8,0.2)] animate-in zoom-in-95 relative" onClick={e => e.stopPropagation()}>
+                        <button onClick={() => setSelectedTrophy(null)} className="absolute top-4 right-4 text-gray-400 hover:text-white"><X /></button>
+                        <div className="flex flex-col items-center text-center gap-4">
+                            <div className="text-6xl filter drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]">{selectedTrophy.icon}</div>
+                            <div>
+                                <h3 className="text-2xl font-bold text-yellow-500 font-graffiti">{selectedTrophy.name}</h3>
+                                <div className={`text-xs font-bold uppercase tracking-widest mt-2 px-3 py-1 rounded-full inline-block border ${userUnlocks.has(selectedTrophy.id) ? 'bg-yellow-500/10 border-yellow-500 text-yellow-500' : 'bg-gray-800 border-gray-700 text-gray-500'}`}>
+                                    {userUnlocks.has(selectedTrophy.id) ? '🏆 Conseguido' : '🔒 Bloqueado'}
+                                </div>
+                            </div>
+                            <p className="text-gray-300 text-sm leading-relaxed border-t border-white/10 pt-4 w-full">
+                                {selectedTrophy.description}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* COLLECTIBLES */}
             {collectibles.length > 0 && (
