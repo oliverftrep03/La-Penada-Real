@@ -215,9 +215,9 @@ export default function ProfilePage() {
         setUploadingAvatar(true);
         const file = e.target.files[0];
         try {
-            const fileName = `${profile.id}/avatar_${Math.random()}`;
-            await supabase.storage.from('avatars').upload(fileName, file);
-            const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(fileName);
+            const fileName = `avatars/${profile.id}/${Math.random()}`;
+            await supabase.storage.from('gallery').upload(fileName, file);
+            const { data: { publicUrl } } = supabase.storage.from('gallery').getPublicUrl(fileName);
 
             await supabase.from("profiles").update({ avatar_url: publicUrl }).eq("id", profile.id);
             setProfile({ ...profile, avatar_url: publicUrl });

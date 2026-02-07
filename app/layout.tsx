@@ -13,10 +13,10 @@ const permanentMarker = Permanent_Marker({
 export const metadata: Metadata = {
     title: "La Peñada Real",
     description: "App privada del grupo",
-    manifest: "/manifest.json?v=4",
+    manifest: "/manifest.json?v=5",
     icons: {
-        icon: "/logo.jpg",
-        apple: "/logo.jpg",
+        icon: "/logo.jpg?v=5",
+        apple: "/logo.jpg?v=5",
     },
     appleWebApp: {
         capable: true,
