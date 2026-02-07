@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
-import { Loader2, Crown, ChevronRight } from "lucide-react";
+import { Loader2, Crown, ChevronRight, UserCheck, UserPlus, AlertTriangle } from "lucide-react";
 import toast from "react-hot-toast";
 
 const AVAILABLE_NAMES = [
@@ -20,15 +20,14 @@ export default function SetupPage() {
     const router = useRouter();
     const [user, setUser] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [takenNames, setTakenNames] = useState<string[]>([]);
+    const [profiles, setProfiles] = useState<any[]>([]);
     const [selectedName, setSelectedName] = useState<string | null>(null);
     const [creating, setCreating] = useState(false);
-    const [mode, setMode] = useState<'create' | 'recover'>('create');
-    const [recoveryName, setRecoveryName] = useState<string | null>(null);
+    const [step, setStep] = useState<'welcome' | 'create' | 'recover'>('welcome');
 
     useEffect(() => {
         checkUser();
-        fetchTakenNames();
+        fetchProfiles();
     }, []);
 
     const checkUser = async () => {
@@ -41,11 +40,9 @@ export default function SetupPage() {
         setLoading(false);
     };
 
-    const fetchTakenNames = async () => {
-        const { data } = await supabase.from("profiles").select("group_name");
-        if (data) {
-            setTakenNames(data.map(p => p.group_name));
-        }
+    const fetchProfiles = async () => {
+        const { data } = await supabase.from("profiles").select("group_name, id");
+        if (data) setProfiles(data);
     };
 
     const handleCreateProfile = async () => {
@@ -55,8 +52,8 @@ export default function SetupPage() {
         const { error } = await supabase
             .from("profiles")
             .insert({
-                id: user.id,
-                email: user.email || null,
+                id: user.id, // Primary Key is Auth ID
+                email: user.email, // Explicitly save email
                 group_name: selectedName,
                 avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
                 description: "Nuevo miembro de la realeza.",
@@ -69,7 +66,7 @@ export default function SetupPage() {
 
         if (error) {
             console.error(error);
-            toast.error("Error al crear perfil.");
+            toast.error("Error al crear. Intenta con otro nombre.");
             setCreating(false);
         } else {
             toast.success(`¡Bienvenido, ${selectedName}! 👑`);
@@ -78,20 +75,22 @@ export default function SetupPage() {
     };
 
     const handleRecoverAccount = async () => {
-        if (!recoveryName || !user) return;
-        if (!confirm(`¿Seguro que eres ${recoveryName}? Se vinculará a tu cuenta de Google actual.`)) return;
+        if (!selectedName || !user) return;
+
+        // Final Confirmation
+        const confirmMsg = `¿Confirma que eres ${selectedName}?\n\nTu correo (${user.email}) quedará vinculado PARA SIEMPRE a este usuario.\n\nEsto no se puede deshacer.`;
+        if (!window.confirm(confirmMsg)) return;
 
         setCreating(true);
         try {
-            const { error } = await supabase.rpc('claim_profile', { target_username: recoveryName });
+            const { error } = await supabase.rpc('claim_profile', { target_username: selectedName });
             if (error) throw error;
 
-            toast.success(`¡Cuenta recuperada! Hola de nuevo, ${recoveryName}.`);
+            toast.success(`¡Cuenta RECUPERADA! Disfruta, ${selectedName}.`);
             router.replace("/home");
         } catch (e: any) {
             console.error(e);
-            // Show the actual error message from Supabase/SQL to help debugging
-            toast.error(e.message || "Error al recuperar. Puede que ya esté vinculada.");
+            toast.error(e.message || "Error al vincular. Inténtalo de nuevo.");
             setCreating(false);
         }
     };
@@ -104,118 +103,149 @@ export default function SetupPage() {
         );
     }
 
-    return (
-        <div className="min-h-screen bg-black text-white p-6 flex flex-col items-center justify-center max-w-md mx-auto">
-            <div className="text-center mb-8 space-y-2">
-                <Crown className="w-16 h-16 text-[#c0ff00] mx-auto mb-4 animate-bounce" />
-                <h1 className="text-3xl font-bold font-graffiti">Identidad Real</h1>
-                <p className="text-gray-400 text-sm">
-                    Iniciaste sesión como <br /> <span className="text-white font-bold">{user?.email}</span>
+    /* STEP 1: WELCOME Selection */
+    if (step === 'welcome') {
+        return (
+            <div className="min-h-screen bg-black text-white p-6 flex flex-col items-center justify-center max-w-md mx-auto text-center animate-in fade-in slide-in-from-bottom-4">
+                <Crown className="w-20 h-20 text-[#c0ff00] mb-6 animate-pulse" />
+                <h1 className="text-3xl font-graffiti mb-2">Identidad Real</h1>
+                <p className="text-gray-400 mb-8 max-w-xs mx-auto">
+                    Has iniciado sesión con <span className="text-white font-bold">{user?.email}</span>.
+                    <br /><br />
+                    ¿Tienes ya un personaje en La Peñada Real?
                 </p>
-            </div>
 
-            {/* Tabs */}
-            <div className="flex gap-2 bg-gray-900/50 p-1 rounded-full mb-8 border border-white/10 w-full">
-                <button
-                    onClick={() => setMode('create')}
-                    className={`flex-1 py-2 text-sm font-bold rounded-full transition-all ${mode === 'create' ? 'bg-[#c0ff00] text-black shadow-lg' : 'text-gray-400 hover:text-white'}`}
-                >
-                    Nuevo Usuario
-                </button>
-                <button
-                    onClick={() => setMode('recover')}
-                    className={`flex-1 py-2 text-sm font-bold rounded-full transition-all ${mode === 'recover' ? 'bg-[#c0ff00] text-black shadow-lg' : 'text-gray-400 hover:text-white'}`}
-                >
-                    Recuperar Cuenta
-                </button>
-            </div>
+                <div className="w-full space-y-4">
+                    <button
+                        onClick={() => setStep('recover')}
+                        className="w-full bg-[#c0ff00] text-black font-bold py-4 rounded-xl flex items-center justify-center gap-3 hover:scale-105 transition-transform shadow-[0_0_20px_rgba(192,255,0,0.3)]"
+                    >
+                        <UserCheck size={24} /> SÍ, YA TENGO CUENTA
+                    </button>
 
-            {mode === 'create' ? (
-                <>
-                    <p className="text-gray-400 mb-4 text-sm">Elige un nombre disponible:</p>
-                    <div className="grid grid-cols-1 w-full gap-3 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
-                        {AVAILABLE_NAMES.map((name) => {
-                            const isTaken = takenNames.includes(name);
-                            const isSelected = selectedName === name;
-                            return (
-                                <button
-                                    key={name}
-                                    disabled={isTaken}
-                                    onClick={() => setSelectedName(name)}
-                                    className={`
-                                        relative p-4 rounded-xl border-2 text-left transition-all duration-300 flex justify-between items-center
-                                        ${isTaken
-                                            ? "border-gray-800 bg-gray-900 text-gray-600 cursor-not-allowed opacity-50"
-                                            : isSelected
-                                                ? "border-[#c0ff00] bg-[#c0ff00]/10 text-[#c0ff00] shadow-[0_0_20px_rgba(192,255,0,0.2)] scale-105"
-                                                : "border-gray-800 bg-gray-900/50 hover:border-gray-600 hover:bg-gray-800"
-                                        }
-                                    `}
-                                >
-                                    <span className="font-bold">{name}</span>
-                                    {isTaken && <span className="text-[10px] uppercase font-bold text-red-500 bg-red-500/10 px-2 py-1 rounded">Ocupado</span>}
-                                    {isSelected && <Crown className="w-5 h-5 fill-current" />}
-                                </button>
-                            );
-                        })}
-                    </div>
+                    <button
+                        onClick={() => setStep('create')}
+                        className="w-full bg-gray-900 border border-white/10 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-3 hover:bg-gray-800 transition-colors"
+                    >
+                        <UserPlus size={24} /> NO, SOY NUEVO
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    /* STEP 2: RECOVER Logic */
+    if (step === 'recover') {
+        // Filter out profiles that are "taken" by OTHER Google accounts? 
+        // Actually, we just show ALL profiles. If linking fails (because collision with another REAL email), RPC handles it.
+        // We filter out the CURRENT user's temporary profile if it exists in the list to avoid confusion.
+        const claimableProfiles = profiles.filter(p => p.id !== user.id);
+
+        return (
+            <div className="min-h-screen bg-black text-white p-6 flex flex-col max-w-md mx-auto animate-in slide-in-from-right-8">
+                <button onClick={() => setStep('welcome')} className="text-gray-500 mb-6 hover:text-white self-start">
+                    ← Volver
+                </button>
+
+                <h2 className="text-2xl font-bold font-graffiti text-[#c0ff00] mb-2">Reclamar Identidad</h2>
+                <p className="text-gray-400 text-sm mb-6">
+                    Selecciona tu personaje antiguo. <br />
+                    <span className="text-yellow-500 flex items-center gap-1 mt-1 font-bold">
+                        <AlertTriangle size={12} /> Se vinculará para siempre a tu email.
+                    </span>
+                </p>
+
+                <div className="grid gap-3 overflow-y-auto max-h-[60vh] pr-2 custom-scrollbar">
+                    {claimableProfiles.length === 0 && <p className="text-center text-gray-500 py-10">No se encontraron perfiles.</p>}
+
+                    {claimableProfiles.map(p => (
+                        <button
+                            key={p.id}
+                            onClick={() => setSelectedName(p.group_name)}
+                            className={`
+                                p-4 rounded-xl border-2 text-left transition-all flex justify-between items-center
+                                ${selectedName === p.group_name
+                                    ? "border-[#c0ff00] bg-[#c0ff00]/10 text-white shadow-[0_0_15px_rgba(192,255,0,0.2)]"
+                                    : "border-gray-800 bg-gray-900/50 text-gray-400 hover:border-gray-600"
+                                }
+                            `}
+                        >
+                            <span className="font-bold text-lg">{p.group_name}</span>
+                            {selectedName === p.group_name && <UserCheck className="text-[#c0ff00]" />}
+                        </button>
+                    ))}
+                </div>
+
+                <div className="mt-auto pt-6">
                     <button
                         disabled={!selectedName || creating}
-                        onClick={handleCreateProfile}
-                        className={`
-                            mt-8 w-full py-4 rounded-full font-bold text-lg flex items-center justify-center gap-2 transition-all
-                            ${!selectedName
-                                ? "bg-gray-800 text-gray-500 cursor-not-allowed"
-                                : "bg-[#c0ff00] text-black hover:shadow-[0_0_30px_rgba(192,255,0,0.4)] hover:scale-105"
-                            }
-                        `}
-                    >
-                        {creating ? <Loader2 className="animate-spin" /> : <>Confirmar Identidad <ChevronRight /></>}
-                    </button>
-                </>
-            ) : (
-                <>
-                    <p className="text-gray-400 mb-4 text-sm">¿Quién eras en la vida pasada?</p>
-                    <div className="grid grid-cols-1 w-full gap-3 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
-                        {takenNames.length === 0 ? (
-                            <p className="text-center text-gray-500 py-8">No hay cuentas para recuperar.</p>
-                        ) : (
-                            takenNames.map((name) => {
-                                const isSelected = recoveryName === name;
-                                return (
-                                    <button
-                                        key={name}
-                                        onClick={() => setRecoveryName(name)}
-                                        className={`
-                                            relative p-4 rounded-xl border-2 text-left transition-all duration-300 flex justify-between items-center
-                                            ${isSelected
-                                                ? "border-[#c0ff00] bg-[#c0ff00]/10 text-[#c0ff00] shadow-[0_0_20px_rgba(192,255,0,0.2)] scale-105"
-                                                : "border-gray-800 bg-gray-900/50 hover:border-gray-600 hover:bg-gray-800"
-                                            }
-                                        `}
-                                    >
-                                        <span className="font-bold">{name}</span>
-                                        {isSelected && <Crown className="w-5 h-5 fill-current" />}
-                                    </button>
-                                );
-                            })
-                        )}
-                    </div>
-                    <button
-                        disabled={!recoveryName || creating}
                         onClick={handleRecoverAccount}
                         className={`
-                            mt-8 w-full py-4 rounded-full font-bold text-lg flex items-center justify-center gap-2 transition-all
-                            ${!recoveryName
+                            w-full py-4 rounded-full font-bold text-lg flex items-center justify-center gap-2 transition-all
+                            ${!selectedName
                                 ? "bg-gray-800 text-gray-500 cursor-not-allowed"
-                                : "bg-[#c0ff00] text-black hover:shadow-[0_0_30px_rgba(192,255,0,0.4)] hover:scale-105"
+                                : "bg-[#c0ff00] text-black hover:scale-105 shadow-lg"
                             }
                         `}
                     >
-                        {creating ? <Loader2 className="animate-spin" /> : <>Recuperar Cuenta <ChevronRight /></>}
+                        {creating ? <Loader2 className="animate-spin" /> : "VINCULAR AHORA"}
                     </button>
-                </>
-            )}
+                </div>
+            </div>
+        );
+    }
+
+    /* STEP 3: CREATE Logic */
+    return (
+        <div className="min-h-screen bg-black text-white p-6 flex flex-col max-w-md mx-auto animate-in slide-in-from-right-8">
+            <button onClick={() => setStep('welcome')} className="text-gray-500 mb-6 hover:text-white self-start">
+                ← Volver
+            </button>
+
+            <h2 className="text-2xl font-bold font-graffiti text-white mb-2">Crear Nuevo</h2>
+            <p className="text-gray-400 text-sm mb-6">Elige un nombre disponible para empezar tu leyenda.</p>
+
+            <div className="grid gap-3 overflow-y-auto max-h-[60vh] pr-2 custom-scrollbar">
+                {AVAILABLE_NAMES.map(name => {
+                    // Check if name is taken by ANY profile
+                    const isTaken = profiles.some(p => p.group_name === name);
+                    return (
+                        <button
+                            key={name}
+                            disabled={isTaken}
+                            onClick={() => setSelectedName(name)}
+                            className={`
+                                p-4 rounded-xl border-2 text-left transition-all flex justify-between items-center
+                                ${isTaken
+                                    ? "border-transparent bg-gray-900 text-gray-700 cursor-not-allowed opacity-50"
+                                    : selectedName === name
+                                        ? "border-white bg-white text-black font-bold scale-105"
+                                        : "border-gray-800 bg-gray-900/50 text-gray-300 hover:border-gray-600"
+                                }
+                            `}
+                        >
+                            <span>{name}</span>
+                            {isTaken && <span className="text-[10px] uppercase font-bold text-red-900 bg-red-500/20 px-2 rounded">Ocupado</span>}
+                        </button>
+                    );
+                })}
+            </div>
+
+            <div className="mt-auto pt-6">
+                <button
+                    disabled={!selectedName || creating}
+                    onClick={handleCreateProfile}
+                    className={`
+                        w-full py-4 rounded-full font-bold text-lg flex items-center justify-center gap-2 transition-all
+                        ${!selectedName
+                            ? "bg-gray-800 text-gray-500 cursor-not-allowed"
+                            : "bg-white text-black hover:scale-105 shadow-lg"
+                        }
+                    `}
+                >
+                    {creating ? <Loader2 className="animate-spin" /> : "CREAR PERSONAJE"}
+                </button>
+            </div>
         </div>
     );
 }
