@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
-// import Image from "next/image"; // Removed to prevent crashes
+import Image from "next/image";
 import Navbar from "@/components/Navbar";
 import { Edit2, LogOut, Shield, Zap, X } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -266,7 +266,16 @@ export default function ProfilePage() {
                                     <div className="w-16 h-16 rounded-full bg-gray-800 overflow-hidden relative border border-white/20">
                                         {profile?.avatar_url && <img src={profile.avatar_url} className="w-full h-full object-cover" alt="Avatar" />}
                                     </div>
-                                    <span className="text-xs text-gray-500 italic">Gestión de avatar desactivada</span>
+                                    <div className="flex-1">
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleAvatarUpload}
+                                            disabled={uploadingAvatar}
+                                            className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#c0ff00] file:text-black hover:file:bg-[#b0e600]"
+                                        />
+                                        {uploadingAvatar && <p className="text-xs text-[#c0ff00] mt-1">Subiendo...</p>}
+                                    </div>
                                 </div>
                             </div>
 
