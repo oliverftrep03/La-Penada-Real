@@ -88,9 +88,10 @@ export default function SetupPage() {
 
             toast.success(`¡Cuenta recuperada! Hola de nuevo, ${recoveryName}.`);
             router.replace("/home");
-        } catch (e) {
+        } catch (e: any) {
             console.error(e);
-            toast.error("Error al recuperar. Puede que ya esté vinculada.");
+            // Show the actual error message from Supabase/SQL to help debugging
+            toast.error(e.message || "Error al recuperar. Puede que ya esté vinculada.");
             setCreating(false);
         }
     };
