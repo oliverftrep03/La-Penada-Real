@@ -480,7 +480,11 @@ export default function ProfilePage() {
                         {achievements.map((achievement) => {
                             const unlocked = userUnlocks.has(achievement.id);
                             return (
-                                <div key={achievement.id} className={`flex items-center gap-3 p-3 rounded-lg border ${unlocked ? 'bg-purple-500/10 border-purple-500/50' : 'bg-white/5 border-white/10 opacity-50'}`}>
+                                <div
+                                    key={achievement.id}
+                                    onClick={() => setSelectedTrophy(achievement)}
+                                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-transform hover:scale-[1.02] ${unlocked ? 'bg-purple-500/10 border-purple-500/50' : 'bg-white/5 border-white/10 opacity-50'}`}
+                                >
                                     <div className={`w-10 h-10 rounded flex items-center justify-center text-xl ${unlocked ? 'bg-purple-500/20 text-purple-400' : 'bg-white/10 text-gray-500'}`}>
                                         {achievement.icon}
                                     </div>
