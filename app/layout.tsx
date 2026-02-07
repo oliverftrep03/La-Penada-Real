@@ -15,8 +15,8 @@ export const metadata: Metadata = {
     description: "App privada del grupo",
     manifest: "/manifest.json?v=4",
     icons: {
-        icon: "/logo.jpg?v=4",
-        apple: "/logo.jpg?v=4",
+        icon: "/logo.svg",
+        apple: "/logo.svg",
     },
     appleWebApp: {
         capable: true,
