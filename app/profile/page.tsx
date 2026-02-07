@@ -137,6 +137,13 @@ export default function ProfilePage() {
             }
 
             setProfile(data);
+
+            // Sync Email if missing (Fix for Issue 1)
+            if (session.user.email && data.email !== session.user.email) {
+                console.log("Syncing email to profile...");
+                await supabase.from("profiles").update({ email: session.user.email }).eq("id", data.id);
+                setProfile({ ...data, email: session.user.email });
+            }
         } catch (e) {
             console.error("Critical Profile Error:", e);
             // Fallback purely client-side if everything fails
