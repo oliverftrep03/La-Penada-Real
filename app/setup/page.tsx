@@ -13,7 +13,8 @@ const AVAILABLE_NAMES = [
     "Peñezy",
     "Peñodek",
     "Peñimo",
-    "Peñezar"
+    "Peñezar",
+    "Peñateos"
 ];
 
 export default function SetupPage() {
