@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Music, Play, Pause, RotateCw, Dices } from "lucide-react";
+import { Music, Play, Pause, RotateCw, Dices, X, Maximize2, Minimize2 } from "lucide-react";
 
 interface ShopItemCardProps {
     item: any;
@@ -12,6 +12,7 @@ interface ShopItemCardProps {
 
 export default function ShopItemCard({ item, owned = false, onBuy, isPreview = false }: ShopItemCardProps) {
     const [isFlipped, setIsFlipped] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(false); // State for zoom effect
     const [isPlaying, setIsPlaying] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -96,125 +97,191 @@ export default function ShopItemCard({ item, owned = false, onBuy, isPreview = f
         };
     }, [item.audio_url]);
 
+    const handleCardClick = () => {
+        if (!isExpanded) {
+            setIsExpanded(true);
+        } else {
+            setIsFlipped(!isFlipped);
+        }
+    };
+
+    const handleClose = (e: any) => {
+        e.stopPropagation();
+        setIsExpanded(false);
+        setIsFlipped(false); // Reset flip on close
+        if (isPlaying && audioRef.current) {
+            audioRef.current.pause();
+            setIsPlaying(false);
+        }
+    };
+
     return (
-        <div className="perspective-1000 w-full aspect-[3/4] max-w-[280px] mx-auto">
+        <>
+            {/* BACKDROP BLUR (Only when expanded) */}
+            {isExpanded && (
+                <div
+                    className="fixed inset-0 bg-black/80 backdrop-blur-md z-40 animate-in fade-in duration-300"
+                    onClick={handleClose}
+                ></div>
+            )}
+
+            {/* MAIN CARD CONTAINER */}
             <div
                 className={`
-                    relative w-full h-full transition-all duration-700 transform-style-3d cursor-pointer group
-                    ${isFlipped ? "rotate-y-180" : ""}
+                    perspective-1000 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]
+                    ${isExpanded
+                        ? "fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
+                        : "relative w-full aspect-[3/4] max-w-[280px] mx-auto cursor-pointer group hover:scale-105"
+                    }
                 `}
-                onClick={() => setIsFlipped(!isFlipped)}
+                onClick={!isExpanded ? handleCardClick : undefined} // Only trigger expand if not already expanded
             >
-                {/* FRONT FACE */}
-                <div className={`
-                    absolute inset-0 w-full h-full backface-hidden rounded-3xl overflow-hidden flex flex-col items-center
-                    border-[3px] ${style.border} ${style.bg} ${style.shadow}
-                `}>
-                    {/* Owned Badge */}
-                    {owned && (
-                        <div className="absolute top-2 left-2 z-30 bg-green-500 text-black font-black text-[10px] px-2 py-1 rounded shadow-lg uppercase tracking-wider transform -rotate-6">
-                            ADQUIRIDO ✅
-                        </div>
-                    )}
+                <div
+                    className={`
+                        relative transition-all duration-700 transform-style-3d 
+                        ${isExpanded ? "w-full max-w-sm h-[600px] pointer-events-auto" : "w-full h-full"}
+                        ${isFlipped ? "rotate-y-180" : ""}
+                    `}
+                    onClick={isExpanded ? handleCardClick : undefined} // Trigger flip only when expanded
+                >
+                    {/* FRONT FACE */}
+                    <div className={`
+                        absolute inset-0 w-full h-full backface-hidden rounded-3xl overflow-hidden flex flex-col items-center
+                        border-[3px] ${style.border} ${style.bg} ${style.shadow}
+                    `}>
+                        {/* CLOSE BUTTON (Expanded Only) */}
+                        {isExpanded && (
+                            <button
+                                onClick={handleClose}
+                                className="absolute top-4 left-4 z-40 bg-black/50 text-white p-2 rounded-full hover:bg-black/80 transition-colors"
+                            >
+                                <X size={20} />
+                            </button>
+                        )}
 
-                    {/* Shine Effect */}
-                    <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none z-20"></div>
-
-                    {/* Rarity Ribbon */}
-                    <div className="absolute top-4 right-4 z-20">
-                        <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border border-white/20 backdrop-blur-md shadow-lg ${style.text} bg-black/60`}>
-                            {item.rarity}
-                        </div>
-                    </div>
-
-                    {/* Image Area */}
-                    <div className="flex-1 w-full relative flex items-center justify-center p-6 z-10 transition-transform duration-500 group-hover:scale-105">
-                        <div className={`absolute inset-0 ${style.overlay} blur-2xl`}></div>
-
-                        {item.image_url ? (
-                            <img src={item.image_url} className="relative z-10 w-full h-full object-contain filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)]" />
-                        ) : (
-                            <div className="relative z-10 flex flex-col items-center justify-center gap-2">
-                                {item.type === 'frame' && <div className={`w-16 h-16 bg-gray-700 ${item.content}`}></div>}
-                                {item.type === 'map_icon' && <span className="text-6xl filter drop-shadow-[0_0_10px_white]">{item.content}</span>}
-                                {item.type === 'collectible' && !item.image_url && <Dices className={`w-16 h-16 opacity-50 ${style.text}`} />}
+                        {/* Owned Badge */}
+                        {owned && (
+                            <div className="absolute top-2 left-2 z-30 bg-green-500 text-black font-black text-[10px] px-2 py-1 rounded shadow-lg uppercase tracking-wider transform -rotate-6">
+                                ADQUIRIDO ✅
                             </div>
                         )}
-                    </div>
 
-                    {/* Audio Indicator Badge */}
-                    {item.audio_url && (
-                        <button
-                            onClick={toggleAudio}
-                            className="absolute top-12 left-2 p-2 bg-black/60 backdrop-blur-md rounded-full text-[#c0ff00] border border-[#c0ff00]/30 shadow-lg z-30 hover:scale-110 transition-transform"
-                        >
-                            {isPlaying ? <Pause size={12} className="animate-pulse" /> : <Music size={12} />}
-                        </button>
-                    )}
+                        {/* Expand Hint (Normal Only) */}
+                        {!isExpanded && !isPreview && (
+                            <div className="absolute top-2 right-2 z-30 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Maximize2 size={16} className="text-white drop-shadow-md" />
+                            </div>
+                        )}
 
-                    {/* Front Footer (Name + Stats + Buy) */}
-                    <div className="w-full bg-black/80 backdrop-blur-xl p-4 flex flex-col gap-2 border-t border-white/10 relative z-20">
-                        <h3 className={`font-graffiti text-xl leading-none uppercase tracking-wide truncate ${style.text} drop-shadow-md text-center`}>
-                            {item.name || "Sin Nombre"}
-                        </h3>
+                        {/* Shine Effect */}
+                        <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/0 opacity-0 hover:opacity-100 transition-opacity duration-700 pointer-events-none z-20"></div>
 
-                        <div className="flex items-center justify-between mt-1">
-                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider bg-white/5 px-2 py-1 rounded">
-                                {item.type}
-                            </span>
+                        {/* Rarity Ribbon */}
+                        <div className="absolute top-4 right-4 z-20">
+                            <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border border-white/20 backdrop-blur-md shadow-lg ${style.text} bg-black/60`}>
+                                {item.rarity}
+                            </div>
+                        </div>
 
-                            {/* Buy Button / Price */}
-                            {!isPreview && onBuy ? (
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); if (!owned) onBuy(); }}
-                                    disabled={owned}
-                                    className={`
-                                        font-bold text-[10px] uppercase px-3 py-1.5 rounded-lg shadow-md transition-transform hover:scale-105 active:scale-95
-                                        ${owned
-                                            ? "bg-gray-800 text-gray-500 cursor-default opacity-50"
-                                            : "bg-[#c0ff00] hover:bg-[#b0ef00] text-black shadow-[0_0_10px_rgba(192,255,0,0.3)]"
-                                        }
-                                    `}
-                                >
-                                    {owned ? "EN POSESIÓN" : `${item.price} 🪙 COMPRAR`}
-                                </button>
+                        {/* Image Area */}
+                        <div className="flex-1 w-full relative flex items-center justify-center p-6 z-10">
+                            <div className={`absolute inset-0 ${style.overlay} blur-2xl`}></div>
+
+                            {item.image_url ? (
+                                <img src={item.image_url} className="relative z-10 w-full h-full object-contain filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)]" />
                             ) : (
-                                <div className="flex items-center gap-1 font-mono font-bold text-yellow-400 text-sm bg-yellow-400/10 px-2 py-1 rounded-lg border border-yellow-400/20">
-                                    <span>{item.price}</span>
-                                    <span>🪙</span>
+                                <div className="relative z-10 flex flex-col items-center justify-center gap-2">
+                                    {item.type === 'frame' && <div className={`w-16 h-16 bg-gray-700 ${item.content}`}></div>}
+                                    {item.type === 'map_icon' && <span className="text-6xl filter drop-shadow-[0_0_10px_white]">{item.content}</span>}
+                                    {item.type === 'collectible' && !item.image_url && <Dices className={`w-16 h-16 opacity-50 ${style.text}`} />}
                                 </div>
                             )}
                         </div>
 
-                        <div className="text-[9px] text-gray-600 text-center mt-1 flex items-center justify-center gap-1">
-                            <RotateCw size={8} /> Click para girar
+                        {/* Audio Indicator Badge */}
+                        {item.audio_url && (
+                            <button
+                                onClick={toggleAudio}
+                                className="absolute top-16 right-4 p-2 bg-black/60 backdrop-blur-md rounded-full text-[#c0ff00] border border-[#c0ff00]/30 shadow-lg z-30 hover:scale-110 transition-transform"
+                            >
+                                {isPlaying ? <Pause size={14} className="animate-pulse" /> : <Music size={14} />}
+                            </button>
+                        )}
+
+                        {/* Front Footer (Name + Stats + Buy) */}
+                        <div className="w-full bg-black/80 backdrop-blur-xl p-6 flex flex-col gap-3 border-t border-white/10 relative z-20">
+                            <h3 className={`font-graffiti text-2xl leading-none uppercase tracking-wide truncate ${style.text} drop-shadow-md text-center`}>
+                                {item.name || "Sin Nombre"}
+                            </h3>
+
+                            <div className="flex items-center justify-between mt-1">
+                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider bg-white/5 px-2 py-1 rounded">
+                                    {item.type}
+                                </span>
+
+                                {/* Buy Button / Price */}
+                                {!isPreview && onBuy ? (
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); if (!owned) onBuy(); }}
+                                        disabled={owned}
+                                        className={`
+                                            font-bold text-xs uppercase px-4 py-2 rounded-lg shadow-md transition-transform hover:scale-105 active:scale-95
+                                            ${owned
+                                                ? "bg-gray-800 text-gray-500 cursor-default opacity-50"
+                                                : "bg-[#c0ff00] hover:bg-[#b0ef00] text-black shadow-[0_0_10px_rgba(192,255,0,0.3)]"
+                                            }
+                                        `}
+                                    >
+                                        {owned ? "EN POSESIÓN" : `${item.price} 🪙 COMPRAR`}
+                                    </button>
+                                ) : (
+                                    <div className="flex items-center gap-1 font-mono font-bold text-yellow-400 text-sm bg-yellow-400/10 px-2 py-1 rounded-lg border border-yellow-400/20">
+                                        <span>{item.price}</span>
+                                        <span>🪙</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="text-[10px] text-gray-500 text-center mt-1 flex items-center justify-center gap-1 animate-pulse">
+                                {isExpanded ? <><RotateCw size={10} /> Click para ver descripción</> : <><Maximize2 size={10} /> Click para ampliar</>}
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                {/* BACK FACE */}
-                <div className={`
-                    absolute inset-0 w-full h-full backface-hidden rounded-3xl overflow-hidden flex flex-col items-center justify-center p-6 text-center rotate-y-180
-                    border-[3px] ${style.border} ${style.backBg} shadow-inner
-                `}>
-                    <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+                    {/* BACK FACE */}
+                    <div className={`
+                        absolute inset-0 w-full h-full backface-hidden rounded-3xl overflow-hidden flex flex-col items-center justify-center p-8 text-center rotate-y-180
+                        border-[3px] ${style.border} ${style.backBg} shadow-inner
+                    `}>
+                        {/* CLOSE BUTTON (Back Face) */}
+                        {isExpanded && (
+                            <button
+                                onClick={handleClose}
+                                className="absolute top-4 right-4 z-40 bg-black/50 text-white p-2 rounded-full hover:bg-black/80 transition-colors"
+                            >
+                                <X size={20} />
+                            </button>
+                        )}
 
-                    <h3 className={`font-graffiti text-2xl mb-4 ${style.text} drop-shadow-[0_2px_0_rgba(0,0,0,1)] -rotate-2 select-none`}>
-                        {item.name || "???"}
-                    </h3>
+                        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
 
-                    <div className="relative p-5 border-2 border-white/10 bg-black/40 rounded-xl transform rotate-1 backdrop-blur-sm w-full">
-                        {/* Decorative corners */}
-                        <div className="absolute -top-1 -left-1 w-2 h-2 border-t-2 border-l-2 border-white/30"></div>
-                        <div className="absolute -bottom-1 -right-1 w-2 h-2 border-b-2 border-r-2 border-white/30"></div>
+                        <h3 className={`font-graffiti text-3xl mb-6 ${style.text} drop-shadow-[0_2px_0_rgba(0,0,0,1)] -rotate-2 select-none`}>
+                            {item.name || "???"}
+                        </h3>
 
-                        <p className={`text-xs font-graffiti leading-loose text-white/90 drop-shadow-md ${item.description ? '' : 'italic opacity-50'}`}>
-                            "{item.description || "La leyenda de este artefacto aún no ha sido escrita..."}"
-                        </p>
-                    </div>
+                        <div className="relative p-6 border-2 border-white/10 bg-black/40 rounded-xl transform rotate-1 backdrop-blur-sm w-full max-h-[60%] overflow-y-auto custom-scrollbar">
+                            {/* Decorative corners */}
+                            <div className="absolute -top-1 -left-1 w-3 h-3 border-t-2 border-l-2 border-white/30"></div>
+                            <div className="absolute -bottom-1 -right-1 w-3 h-3 border-b-2 border-r-2 border-white/30"></div>
 
-                    <div className="mt-8 text-[10px] text-gray-500 flex items-center gap-1 select-none">
-                        <RotateCw size={10} /> Click para volver
+                            <p className={`text-base font-graffiti leading-loose text-white/90 drop-shadow-md ${item.description ? '' : 'italic opacity-50'}`}>
+                                "{item.description || "La leyenda de este artefacto aún no ha sido escrita..."}"
+                            </p>
+                        </div>
+
+                        <div className="mt-8 text-[10px] text-gray-500 flex items-center gap-1 select-none cursor-pointer hover:text-white transition-colors" onClick={() => setIsFlipped(false)}>
+                            <RotateCw size={12} /> Click para volver a la imagen
+                        </div>
                     </div>
                 </div>
             </div>
@@ -225,7 +292,10 @@ export default function ShopItemCard({ item, owned = false, onBuy, isPreview = f
                 .backface-hidden { backface-visibility: hidden; }
                 .rotate-y-180 { transform: rotateY(180deg); }
                 .animate-spin-slow { animation: spin 8s linear infinite; }
+                .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+                .custom-scrollbar::-webkit-scrollbar-track { bg: rgba(255,255,255,0.05); }
+                .custom-scrollbar::-webkit-scrollbar-thumb { bg: rgba(255,255,255,0.2); border-radius: 10px; }
             `}</style>
-        </div>
+        </>
     );
 }
