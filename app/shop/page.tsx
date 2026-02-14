@@ -7,6 +7,7 @@ import Image from "next/image";
 import toast from "react-hot-toast";
 import { X, Gift } from "lucide-react";
 import LootChest from "@/components/LootChest";
+import ShopItemCard from "@/components/ShopItemCard";
 
 export default function ShopPage() {
     const [items, setItems] = useState<any[]>([]);
@@ -162,7 +163,7 @@ export default function ShopPage() {
                     <h2 className="text-xl font-bold mb-4 flex items-center gap-2 border-b border-white/10 pb-2">🖼️ Marcos <span className="text-xs font-normal text-gray-500 ml-auto">Estilo visual</span></h2>
                     <div className="grid grid-cols-2 gap-4">
                         {items.filter(i => i.type === 'frame').map(item => (
-                            <ShopItem key={item.id} item={item} owned={inventory.has(item.id)} onBuy={() => buyItem(item)} />
+                            <ShopItemCard key={item.id} item={item} owned={inventory.has(item.id)} onBuy={() => buyItem(item)} />
                         ))}
                     </div>
                 </section>
@@ -172,7 +173,7 @@ export default function ShopPage() {
                     <h2 className="text-xl font-bold mb-4 flex items-center gap-2 border-b border-white/10 pb-2">📍 Iconos <span className="text-xs font-normal text-gray-500 ml-auto">Para el mapa</span></h2>
                     <div className="grid grid-cols-3 gap-4">
                         {items.filter(i => i.type === 'map_icon').map(item => (
-                            <ShopItem key={item.id} item={item} owned={inventory.has(item.id)} onBuy={() => buyItem(item)} />
+                            <ShopItemCard key={item.id} item={item} owned={inventory.has(item.id)} onBuy={() => buyItem(item)} />
                         ))}
                     </div>
                 </section>
@@ -182,7 +183,7 @@ export default function ShopPage() {
                     <h2 className="text-xl font-bold mb-4 flex items-center gap-2 border-b border-white/10 pb-2">💎 Coleccionables <span className="text-xs font-normal text-gray-500 ml-auto">Raros</span></h2>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                         {items.filter(i => i.type === 'collectible').map(item => (
-                            <ShopItem key={item.id} item={item} owned={inventory.has(item.id)} onBuy={() => buyItem(item)} />
+                            <ShopItemCard key={item.id} item={item} owned={inventory.has(item.id)} onBuy={() => buyItem(item)} />
                         ))}
                     </div>
                 </section>
@@ -240,35 +241,4 @@ const getRarityText = (rarity: string) => {
     }
 }
 
-function ShopItem({ item, owned, onBuy }: { item: any, owned: boolean, onBuy: () => void }) {
-    const rarityColors: any = {
-        common: "border-gray-500 text-gray-500",
-        rare: "border-blue-500 text-blue-500 shadow-[0_0_10px_blue]",
-        epic: "border-purple-500 text-purple-500 shadow-[0_0_15px_purple]",
-        legendary: "border-red-500 text-red-500 shadow-[0_0_20px_red]",
-        unique: "border-cyan-400 text-cyan-400 shadow-[0_0_25px_cyan]",
-    };
 
-    return (
-        <div className={`p-4 rounded-xl border bg-white/5 relative overflow-hidden group ${item.rarity ? rarityColors[item.rarity] || "border-white/20" : "border-white/20"}`}>
-            {owned && <div className="absolute top-2 right-2 text-green-500 font-bold text-xs bg-black/50 px-2 py-1 rounded z-10">ADQUIRIDO ✅</div>}
-
-            <div className="h-24 flex items-center justify-center mb-2 bg-black/20 rounded-lg group-hover:scale-105 transition-transform">
-                {item.type === 'frame' && <div className={`w-14 h-14 bg-gray-700 ${item.content}`}></div>}
-                {item.type === 'map_icon' && <span className="text-5xl filter drop-shadow">{item.content}</span>}
-                {item.type === 'collectible' && <span className="text-5xl animate-pulse">{item.content}</span>}
-            </div>
-
-            <h3 className="font-bold text-white leading-tight mb-1">{item.name}</h3>
-            {item.rarity && <div className="text-[10px] uppercase font-bold opacity-80 mb-3">{item.rarity}</div>}
-
-            <button
-                onClick={onBuy}
-                disabled={owned}
-                className={`w-full py-2 rounded-lg font-bold text-xs uppercase tracking-wider transition-all ${owned ? 'bg-gray-800 text-gray-600 cursor-default' : 'bg-white text-black hover:bg-[#c0ff00] hover:scale-105 active:scale-95'}`}
-            >
-                {owned ? "En posesión" : `${item.price} 🪙 Comprar`}
-            </button>
-        </div>
-    );
-}

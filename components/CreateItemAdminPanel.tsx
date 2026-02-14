@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { Upload, Image as ImageIcon, Music, Play, Pause, Trash2, Save, X, Check, Dices, Sparkles, RotateCw } from "lucide-react";
+import ShopItemCard from "./ShopItemCard";
 
 export default function CreateItemAdminPanel({ onItemCreated }: { onItemCreated: () => void }) {
     const [newItem, setNewItem] = useState({
@@ -367,100 +368,7 @@ export default function CreateItemAdminPanel({ onItemCreated }: { onItemCreated:
                     </div>
 
                     {/* CARD CONTAINER (3D SCENE) */}
-                    <div className="perspective-1000 w-72 h-[420px]">
-                        <div
-                            className={`
-                                relative w-full h-full transition-all duration-700 transform-style-3d cursor-pointer
-                                ${isFlipped ? "rotate-y-180" : ""}
-                            `}
-                            onClick={() => setIsFlipped(!isFlipped)}
-                        >
-                            {/* FRONT FACE */}
-                            <div className={`
-                                absolute inset-0 w-full h-full backface-hidden rounded-3xl overflow-hidden flex flex-col items-center
-                                border-[3px] ${style.border} ${style.bg} ${style.shadow}
-                            `}>
-                                {/* Shine Effect */}
-                                <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/0 opacity-0 hover:opacity-100 transition-opacity duration-700 pointer-events-none z-20"></div>
-
-                                {/* Rarity Ribbon */}
-                                <div className="absolute top-4 right-4 z-20">
-                                    <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border border-white/20 backdrop-blur-md shadow-lg ${style.text} bg-black/60`}>
-                                        {newItem.rarity}
-                                    </div>
-                                </div>
-
-                                {/* Image Area */}
-                                <div className="flex-1 w-full relative flex items-center justify-center p-6 z-10">
-                                    <div className={`absolute inset-0 ${style.overlay} blur-2xl`}></div>
-
-                                    {newItem.image_url ? (
-                                        <img src={newItem.image_url} className="relative z-10 w-full h-full object-contain filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)] transform hover:scale-110 transition-transform duration-500" />
-                                    ) : (
-                                        <Dices className={`w-24 h-24 opacity-20 ${style.text}`} />
-                                    )}
-                                </div>
-
-                                {/* Front Footer (Name + Stats) */}
-                                <div className="w-full bg-black/80 backdrop-blur-xl p-5 flex flex-col gap-2 border-t border-white/10 relative z-20">
-                                    <h3 className={`font-graffiti text-2xl leading-none uppercase tracking-wide truncate ${style.text} drop-shadow-md`}>
-                                        {newItem.name || "Sin Nombre"}
-                                    </h3>
-
-                                    <div className="mt-2 flex items-center justify-between">
-                                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider bg-white/5 px-2 py-1 rounded">
-                                            {newItem.type}
-                                        </span>
-                                        <div className="flex items-center gap-1 font-mono font-bold text-yellow-400 text-sm bg-yellow-400/10 px-2 py-1 rounded-lg border border-yellow-400/20">
-                                            <span>{newItem.price}</span>
-                                            <span>🪙</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="text-[10px] text-gray-500 text-center mt-2 flex items-center justify-center gap-1 animate-pulse">
-                                        <RotateCw size={10} /> Click para girar
-                                    </div>
-                                </div>
-
-                                {/* Audio Indicator Badge */}
-                                {newItem.audio_url && (
-                                    <button
-                                        onClick={toggleAudio}
-                                        className="absolute top-4 left-4 p-2 bg-black/60 backdrop-blur-md rounded-full text-[#c0ff00] border border-[#c0ff00]/30 shadow-lg z-30 hover:scale-110 transition-transform"
-                                    >
-                                        {isPlaying ? <Pause size={14} className="animate-pulse" /> : <Music size={14} />}
-                                    </button>
-                                )}
-                            </div>
-
-                            {/* BACK FACE */}
-                            <div className={`
-                                absolute inset-0 w-full h-full backface-hidden rounded-3xl overflow-hidden flex flex-col items-center justify-center p-6 text-center rotate-y-180
-                                border-[3px] ${style.border} ${style.backBg} shadow-inner
-                            `}>
-                                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-
-                                <h3 className={`font-graffiti text-3xl mb-4 ${style.text} drop-shadow-[0_2px_0_rgba(0,0,0,1)] -rotate-2`}>
-                                    {newItem.name || "???"}
-                                </h3>
-
-                                <div className="relative p-6 border-2 border-white/10 bg-black/40 rounded-xl transform rotate-1 backdrop-blur-sm">
-                                    {/* Decorative corners */}
-                                    <div className="absolute -top-1 -left-1 w-3 h-3 border-t-2 border-l-2 border-white/30"></div>
-                                    <div className="absolute -bottom-1 -right-1 w-3 h-3 border-b-2 border-r-2 border-white/30"></div>
-
-                                    <p className={`text-sm font-graffiti leading-loose text-white/90 drop-shadow-md ${newItem.description ? '' : 'italic opacity-50'}`}>
-                                        "{newItem.description || "La leyenda de este artefacto aún no ha sido escrita..."}"
-                                    </p>
-                                </div>
-
-                                <div className="mt-8 text-[10px] text-gray-500 flex items-center gap-1">
-                                    <RotateCw size={10} /> Click para volver
-                                </div>
-                            </div>
-
-                        </div>
-                    </div>
+                    <ShopItemCard item={newItem} isPreview={true} />
                 </div>
             </div>
 
