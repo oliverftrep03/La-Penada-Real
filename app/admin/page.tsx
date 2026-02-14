@@ -5,6 +5,7 @@ import { useTheme } from "@/components/ThemeProvider";
 import { supabase } from "@/lib/supabaseClient";
 import { Upload, Image as ImageImg, Save, Users, Trophy, Medal } from "lucide-react";
 import { useState } from "react";
+import CreateItemAdminPanel from "@/components/CreateItemAdminPanel";
 
 export default function Admin() {
     const { theme, updateTheme } = useTheme();
@@ -240,98 +241,8 @@ export default function Admin() {
                 <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
                     {/* Crear Item */}
                     {/* Crear Item */}
-                    <section className="glass-panel p-5 space-y-4 border-l-4 border-green-500">
-                        <h2 className="font-bold text-lg text-green-400">Crear Artículo</h2>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <label className="text-xs text-gray-400">Nombre</label>
-                                <input
-                                    placeholder="Ej: Marco de Fuego"
-                                    className="w-full p-2 bg-black/50 rounded border border-white/10"
-                                    value={newItem.name}
-                                    onChange={e => setNewItem({ ...newItem, name: e.target.value })}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-xs text-gray-400">Precio</label>
-                                <input
-                                    type="number"
-                                    placeholder="100"
-                                    className="w-full p-2 bg-black/50 rounded border border-white/10"
-                                    value={newItem.price}
-                                    onChange={e => setNewItem({ ...newItem, price: parseInt(e.target.value) })}
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-xs text-gray-400">Tipo</label>
-                                <select
-                                    className="w-full p-2 bg-black/50 rounded border border-white/10"
-                                    value={newItem.type}
-                                    onChange={e => setNewItem({ ...newItem, type: e.target.value })}
-                                >
-                                    <option value="frame">Marco</option>
-                                    <option value="map_icon">Icono Mapa</option>
-                                    <option value="collectible">Coleccionable</option>
-                                </select>
-                            </div>
-
-                            <div className="col-span-2 space-y-2">
-                                <label className="text-xs text-gray-400">Descripción</label>
-                                <textarea
-                                    placeholder="Detalles épicos del artículo..."
-                                    className="w-full p-2 bg-black/50 rounded border border-white/10 resize-none h-20"
-                                    value={newItem.description || ""}
-                                    onChange={e => setNewItem({ ...newItem, description: e.target.value })}
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-xs text-gray-400">Rareza / Calidad</label>
-                                <select
-                                    className="w-full p-2 bg-black/50 rounded border border-white/10"
-                                    value={newItem.rarity}
-                                    onChange={e => setNewItem({ ...newItem, rarity: e.target.value })}
-                                >
-                                    <option value="common">Peñomún (Gris)</option>
-                                    <option value="rare">Peñarro (Azul)</option>
-                                    <option value="epic">Peñepico (Morado)</option>
-                                    <option value="legendary">Peñendario (Dorado)</option>
-                                    <option value="unique">Peñatino (Platino 💀)</option>
-                                </select>
-                            </div>
-
-                            <div className="col-span-2 space-y-2">
-                                <label className="text-xs text-gray-400">
-                                    {newItem.type === 'frame' ? "Clase CSS (Auto-sugerida si vacío)" : "Contenido (Emoji o Texto)"}
-                                </label>
-                                <input
-                                    placeholder={newItem.type === 'frame' ? "penarro-frame" : "💀"}
-                                    className="w-full p-2 bg-black/50 rounded border border-white/10"
-                                    value={newItem.content}
-                                    onChange={e => setNewItem({ ...newItem, content: e.target.value })}
-                                />
-                            </div>
-
-                            <div className="col-span-2 space-y-2">
-                                <label className="text-xs text-gray-400">Imagen de Tienda (Opcional)</label>
-                                <div className="flex items-center gap-4">
-                                    <label className="cursor-pointer bg-white/10 px-4 py-2 rounded border border-white/20 hover:bg-white/20 flex items-center gap-2">
-                                        <ImageImg className="w-4 h-4" /> Subir Imagen
-                                        <input type="file" className="hidden" accept="image/*" onChange={(e) => {
-                                            if (e.target.files?.[0]) handleShopImageUpload(e.target.files[0]);
-                                        }} />
-                                    </label>
-                                    {newItem.image_url && (
-                                        <img src={newItem.image_url} alt="Preview" className="h-12 w-12 object-cover rounded border border-white/20" />
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                        <button onClick={createItem} className="w-full bg-green-500 text-black font-bold py-3 rounded-lg hover:scale-[1.02] transition-transform">
-                            AÑADIR A TIENDA 🛒
-                        </button>
-                    </section>
+                    {/* Crear Item - NUEVO COMPONENTE */}
+                    <CreateItemAdminPanel onItemCreated={loadItems} />
 
 
                     {/* Lista Items */}
