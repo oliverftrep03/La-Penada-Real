@@ -94,9 +94,17 @@ export default function Admin() {
     };
 
     const deleteItem = async (id: string) => {
-        if (!confirm("¿Borrar item?")) return;
+        if (!confirm("¿SEGURO QUE QUIERES BORRAR ESTE ÍTEM? No se puede deshacer.")) return;
+
         const { error } = await supabase.from("store_items").delete().eq("id", id);
-        if (!error) loadItems();
+
+        if (error) {
+            console.error("Error borrando:", error);
+            alert("Error al borrar: " + error.message + "\n\n(Asegúrate de haber ejecutado el script de políticas RLS)");
+        } else {
+            alert("Ítem borrado correctamente");
+            loadItems();
+        }
     };
 
     const loadRewards = async () => {

@@ -209,13 +209,13 @@ export default function ShopItemCard({ item, owned = false, onBuy, isPreview = f
                         )}
 
                         {/* Front Footer (Name + Stats + Buy) */}
-                        <div className="w-full bg-black/80 backdrop-blur-xl p-6 flex flex-col gap-3 border-t border-white/10 relative z-20">
-                            <h3 className={`font-graffiti text-2xl leading-none uppercase tracking-wide truncate ${style.text} drop-shadow-md text-center`}>
+                        <div className="w-full bg-black/80 backdrop-blur-xl p-3 flex flex-col gap-2 border-t border-white/10 relative z-20">
+                            <h3 className={`font-graffiti text-base leading-none uppercase tracking-wide truncate ${style.text} drop-shadow-md text-center`}>
                                 {item.name || "Sin Nombre"}
                             </h3>
 
                             <div className="flex items-center justify-between mt-1">
-                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider bg-white/5 px-2 py-1 rounded">
+                                <span className="text-[9px] font-bold text-gray-500 uppercase tracking-wider bg-white/5 px-1.5 py-0.5 rounded">
                                     {item.type}
                                 </span>
 
@@ -225,25 +225,25 @@ export default function ShopItemCard({ item, owned = false, onBuy, isPreview = f
                                         onClick={(e) => { e.stopPropagation(); if (!owned) onBuy(); }}
                                         disabled={owned}
                                         className={`
-                                            font-bold text-xs uppercase px-4 py-2 rounded-lg shadow-md transition-transform hover:scale-105 active:scale-95
-                                            ${owned
+                                        font-bold text-[9px] uppercase px-2 py-1 rounded-lg shadow-md transition-transform hover:scale-105 active:scale-95
+                                        ${owned
                                                 ? "bg-gray-800 text-gray-500 cursor-default opacity-50"
                                                 : "bg-[#c0ff00] hover:bg-[#b0ef00] text-black shadow-[0_0_10px_rgba(192,255,0,0.3)]"
                                             }
-                                        `}
+                                    `}
                                     >
-                                        {owned ? "EN POSESIÓN" : `${item.price} 🪙 COMPRAR`}
+                                        {owned ? "EN POSESIÓN" : `${item.price} 🪙`}
                                     </button>
                                 ) : (
-                                    <div className="flex items-center gap-1 font-mono font-bold text-yellow-400 text-sm bg-yellow-400/10 px-2 py-1 rounded-lg border border-yellow-400/20">
+                                    <div className="flex items-center gap-1 font-mono font-bold text-yellow-400 text-xs bg-yellow-400/10 px-1.5 py-0.5 rounded-lg border border-yellow-400/20">
                                         <span>{item.price}</span>
                                         <span>🪙</span>
                                     </div>
                                 )}
                             </div>
 
-                            <div className="text-[10px] text-gray-500 text-center mt-1 flex items-center justify-center gap-1 animate-pulse">
-                                {isExpanded ? <><RotateCw size={10} /> Click para ver descripción</> : <><Maximize2 size={10} /> Click para ampliar</>}
+                            <div className="text-[8px] text-gray-600 text-center mt-1 flex items-center justify-center gap-1">
+                                {isExpanded ? <><RotateCw size={8} /> Click para ver descripción</> : <><Maximize2 size={8} /> Click para ampliar</>}
                             </div>
                         </div>
                     </div>
