@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { Upload, Image as ImageIcon, Music, Play, Pause, Trash2, Save, X, Check, Dices, Sparkles } from "lucide-react";
+import { Upload, Image as ImageIcon, Music, Play, Pause, Trash2, Save, X, Check, Dices, Sparkles, RotateCw } from "lucide-react";
 
 export default function CreateItemAdminPanel({ onItemCreated }: { onItemCreated: () => void }) {
     const [newItem, setNewItem] = useState({
@@ -19,6 +19,7 @@ export default function CreateItemAdminPanel({ onItemCreated }: { onItemCreated:
     const [uploadingImage, setUploadingImage] = useState(false);
     const [uploadingAudio, setUploadingAudio] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
+    const [isFlipped, setIsFlipped] = useState(false); // New state for flip
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
     // Drag & Drop State
@@ -32,7 +33,8 @@ export default function CreateItemAdminPanel({ onItemCreated }: { onItemCreated:
             text: "text-gray-300",
             shadow: "shadow-none",
             overlay: "bg-white/5",
-            icon: "text-gray-500"
+            icon: "text-gray-500",
+            backBg: "bg-gray-900"
         },
         rare: {
             border: "border-blue-500",
@@ -40,7 +42,8 @@ export default function CreateItemAdminPanel({ onItemCreated }: { onItemCreated:
             text: "text-blue-300",
             shadow: "shadow-[0_0_20px_rgba(59,130,246,0.4)]",
             overlay: "bg-blue-500/10",
-            icon: "text-blue-400"
+            icon: "text-blue-400",
+            backBg: "bg-blue-950"
         },
         epic: {
             border: "border-purple-500",
@@ -49,7 +52,8 @@ export default function CreateItemAdminPanel({ onItemCreated }: { onItemCreated:
             shadow: "shadow-[0_0_25px_rgba(168,85,247,0.5)]",
             overlay: "bg-purple-500/10",
             animation: "animate-pulse",
-            icon: "text-purple-400"
+            icon: "text-purple-400",
+            backBg: "bg-purple-950"
         },
         legendary: {
             border: "border-yellow-400",
@@ -58,7 +62,8 @@ export default function CreateItemAdminPanel({ onItemCreated }: { onItemCreated:
             shadow: "shadow-[0_0_35px_rgba(234,179,8,0.6)]",
             overlay: "bg-yellow-500/20",
             animation: "animate-pulse",
-            icon: "text-yellow-400"
+            icon: "text-yellow-400",
+            backBg: "bg-yellow-950"
         },
         unique: {
             border: "border-white",
@@ -66,8 +71,9 @@ export default function CreateItemAdminPanel({ onItemCreated }: { onItemCreated:
             text: "text-white",
             shadow: "shadow-[0_0_40px_rgba(255,255,255,0.8)]",
             overlay: "bg-white/10",
-            animation: "animate-spin-slow", // Custom or use pulse
-            icon: "text-white"
+            animation: "animate-spin-slow",
+            icon: "text-white",
+            backBg: "bg-black"
         }
     };
 
@@ -106,12 +112,9 @@ export default function CreateItemAdminPanel({ onItemCreated }: { onItemCreated:
     const handleCreate = async () => {
         if (!newItem.name) return alert("¡Falta el nombre del ítem!");
 
-        setUploadingImage(true); // Temporary block UI
+        setUploadingImage(true);
 
-        // Auto-fill content for specific types if empty
         let finalItem = { ...newItem };
-
-        // Ensure audio is null if empty string (cleaner for DB)
         if (!finalItem.audio_url) finalItem.audio_url = "";
 
         if (finalItem.type === 'frame' && !finalItem.content) {
@@ -129,7 +132,7 @@ export default function CreateItemAdminPanel({ onItemCreated }: { onItemCreated:
 
         const { error } = await supabase.from("store_items").insert([finalItem]);
 
-        setUploadingImage(false); // Unblock
+        setUploadingImage(false);
 
         if (error) {
             console.error(error);
@@ -143,7 +146,8 @@ export default function CreateItemAdminPanel({ onItemCreated }: { onItemCreated:
         }
     };
 
-    const toggleAudio = () => {
+    const toggleAudio = (e: any) => {
+        e.stopPropagation(); // Prevent card flip
         if (!audioRef.current) {
             audioRef.current = new Audio(newItem.audio_url);
             audioRef.current.onended = () => setIsPlaying(false);
@@ -167,7 +171,6 @@ export default function CreateItemAdminPanel({ onItemCreated }: { onItemCreated:
         setIsPlaying(false);
     }
 
-    // Update audio ref source if url changes
     useEffect(() => {
         if (newItem.audio_url) {
             if (audioRef.current) {
@@ -175,7 +178,7 @@ export default function CreateItemAdminPanel({ onItemCreated }: { onItemCreated:
                 audioRef.current = null;
             }
             audioRef.current = new Audio(newItem.audio_url);
-            setIsPlaying(false); // Reset state
+            setIsPlaying(false);
         }
     }, [newItem.audio_url]);
 
@@ -186,7 +189,6 @@ export default function CreateItemAdminPanel({ onItemCreated }: { onItemCreated:
 
             {/* LEFT: FORM */}
             <div className="bg-[#0a0a0a] p-6 rounded-2xl border border-white/10 shadow-2xl space-y-5 relative overflow-hidden group">
-                {/* Background decorative glow */}
                 <div className="absolute -top-20 -right-20 w-64 h-64 bg-green-500/5 rounded-full blur-3xl pointer-events-none group-hover:bg-green-500/10 transition-colors"></div>
 
                 <h2 className="text-2xl font-black font-graffiti text-white flex items-center gap-3 relative z-10">
@@ -195,7 +197,6 @@ export default function CreateItemAdminPanel({ onItemCreated }: { onItemCreated:
                 </h2>
 
                 <div className="space-y-5 relative z-10">
-                    {/* Name & Price */}
                     <div className="grid grid-cols-3 gap-4">
                         <div className="col-span-2 space-y-1">
                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Nombre del Artefacto</label>
@@ -220,9 +221,8 @@ export default function CreateItemAdminPanel({ onItemCreated }: { onItemCreated:
                         </div>
                     </div>
 
-                    {/* Description */}
                     <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Lore / Descripción</label>
+                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Lore (Aparece al Girar)</label>
                         <textarea
                             value={newItem.description}
                             onChange={e => setNewItem({ ...newItem, description: e.target.value })}
@@ -231,7 +231,6 @@ export default function CreateItemAdminPanel({ onItemCreated }: { onItemCreated:
                         />
                     </div>
 
-                    {/* Image Drag & Drop */}
                     <div className="space-y-1">
                         <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Imagen Visual</label>
                         <div
@@ -272,7 +271,6 @@ export default function CreateItemAdminPanel({ onItemCreated }: { onItemCreated:
                         </div>
                     </div>
 
-                    {/* Audio Upload */}
                     <div className="space-y-1">
                         <div className="flex justify-between items-center">
                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Efecto de Sonido (Opcional)</label>
@@ -307,7 +305,6 @@ export default function CreateItemAdminPanel({ onItemCreated }: { onItemCreated:
                         </div>
                     </div>
 
-                    {/* Selectors */}
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tipo de Ítem</label>
@@ -337,7 +334,6 @@ export default function CreateItemAdminPanel({ onItemCreated }: { onItemCreated:
                         </div>
                     </div>
 
-                    {/* Extra Content */}
                     <div className="space-y-1">
                         <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                             {newItem.type === 'frame' ? "Clase CSS (Opcional)" : "Contenido Extra"}
@@ -350,7 +346,6 @@ export default function CreateItemAdminPanel({ onItemCreated }: { onItemCreated:
                         />
                     </div>
 
-                    {/* Submit */}
                     <button
                         onClick={handleCreate}
                         disabled={uploadingImage || uploadingAudio}
@@ -367,68 +362,115 @@ export default function CreateItemAdminPanel({ onItemCreated }: { onItemCreated:
             <div className="flex flex-col gap-4 sticky top-6">
                 <div className="bg-[#0a0a0a] p-8 rounded-2xl border border-white/10 min-h-[500px] flex flex-col items-center justify-center relative overflow-hidden shadow-2xl">
                     <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
-                    <div className="absolute bottom-4 text-[10px] font-bold text-gray-600 uppercase tracking-[0.3em]">Vista Previa</div>
+                    <div className="absolute bottom-4 text-[10px] font-bold text-gray-600 uppercase tracking-[0.3em] flex items-center gap-2">
+                        <RotateCw size={10} /> VISTA PREVIA INTERACTIVA
+                    </div>
 
-                    {/* CARD CONTAINER */}
-                    <div className={`
-                        relative w-72 h-[420px] rounded-3xl flex flex-col items-center overflow-hidden transition-all duration-500 transform hover:scale-105 hover:rotate-1 group/card
-                        border-[3px] ${style.border} ${style.bg} ${style.shadow}
-                    `}>
-                        {/* Shine Effect */}
-                        <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/0 opacity-0 group-hover/card:opacity-100 transition-opacity duration-700 pointer-events-none z-20"></div>
+                    {/* CARD CONTAINER (3D SCENE) */}
+                    <div className="perspective-1000 w-72 h-[420px]">
+                        <div
+                            className={`
+                                relative w-full h-full transition-all duration-700 transform-style-3d cursor-pointer
+                                ${isFlipped ? "rotate-y-180" : ""}
+                            `}
+                            onClick={() => setIsFlipped(!isFlipped)}
+                        >
+                            {/* FRONT FACE */}
+                            <div className={`
+                                absolute inset-0 w-full h-full backface-hidden rounded-3xl overflow-hidden flex flex-col items-center
+                                border-[3px] ${style.border} ${style.bg} ${style.shadow}
+                            `}>
+                                {/* Shine Effect */}
+                                <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/0 opacity-0 hover:opacity-100 transition-opacity duration-700 pointer-events-none z-20"></div>
 
-                        {/* Rarity Ribbon */}
-                        <div className="absolute top-4 right-4 z-20">
-                            <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border border-white/20 backdrop-blur-md shadow-lg ${style.text} bg-black/60`}>
-                                {newItem.rarity}
+                                {/* Rarity Ribbon */}
+                                <div className="absolute top-4 right-4 z-20">
+                                    <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border border-white/20 backdrop-blur-md shadow-lg ${style.text} bg-black/60`}>
+                                        {newItem.rarity}
+                                    </div>
+                                </div>
+
+                                {/* Image Area */}
+                                <div className="flex-1 w-full relative flex items-center justify-center p-6 z-10">
+                                    <div className={`absolute inset-0 ${style.overlay} blur-2xl`}></div>
+
+                                    {newItem.image_url ? (
+                                        <img src={newItem.image_url} className="relative z-10 w-full h-full object-contain filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)] transform hover:scale-110 transition-transform duration-500" />
+                                    ) : (
+                                        <Dices className={`w-24 h-24 opacity-20 ${style.text}`} />
+                                    )}
+                                </div>
+
+                                {/* Front Footer (Name + Stats) */}
+                                <div className="w-full bg-black/80 backdrop-blur-xl p-5 flex flex-col gap-2 border-t border-white/10 relative z-20">
+                                    <h3 className={`font-graffiti text-2xl leading-none uppercase tracking-wide truncate ${style.text} drop-shadow-md`}>
+                                        {newItem.name || "Sin Nombre"}
+                                    </h3>
+
+                                    <div className="mt-2 flex items-center justify-between">
+                                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider bg-white/5 px-2 py-1 rounded">
+                                            {newItem.type}
+                                        </span>
+                                        <div className="flex items-center gap-1 font-mono font-bold text-yellow-400 text-sm bg-yellow-400/10 px-2 py-1 rounded-lg border border-yellow-400/20">
+                                            <span>{newItem.price}</span>
+                                            <span>🪙</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="text-[10px] text-gray-500 text-center mt-2 flex items-center justify-center gap-1 animate-pulse">
+                                        <RotateCw size={10} /> Click para girar
+                                    </div>
+                                </div>
+
+                                {/* Audio Indicator Badge */}
+                                {newItem.audio_url && (
+                                    <button
+                                        onClick={toggleAudio}
+                                        className="absolute top-4 left-4 p-2 bg-black/60 backdrop-blur-md rounded-full text-[#c0ff00] border border-[#c0ff00]/30 shadow-lg z-30 hover:scale-110 transition-transform"
+                                    >
+                                        {isPlaying ? <Pause size={14} className="animate-pulse" /> : <Music size={14} />}
+                                    </button>
+                                )}
                             </div>
-                        </div>
 
-                        {/* Image Area */}
-                        <div className="flex-1 w-full relative flex items-center justify-center p-6 z-10">
-                            {/* Inner Glow */}
-                            <div className={`absolute inset-0 ${style.overlay} blur-2xl`}></div>
+                            {/* BACK FACE */}
+                            <div className={`
+                                absolute inset-0 w-full h-full backface-hidden rounded-3xl overflow-hidden flex flex-col items-center justify-center p-6 text-center rotate-y-180
+                                border-[3px] ${style.border} ${style.backBg} shadow-inner
+                            `}>
+                                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
 
-                            {newItem.image_url ? (
-                                <img src={newItem.image_url} className="relative z-10 w-full h-full object-contain filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)] transform group-hover/card:scale-110 transition-transform duration-500" />
-                            ) : (
-                                <Dices className={`w-24 h-24 opacity-20 ${style.text}`} />
-                            )}
-                        </div>
+                                <h3 className={`font-graffiti text-3xl mb-4 ${style.text} drop-shadow-[0_2px_0_rgba(0,0,0,1)] -rotate-2`}>
+                                    {newItem.name || "???"}
+                                </h3>
 
-                        {/* Card Content */}
-                        <div className="w-full bg-black/80 backdrop-blur-xl p-5 flex flex-col gap-2 border-t border-white/10 relative z-20">
+                                <div className="relative p-6 border-2 border-white/10 bg-black/40 rounded-xl transform rotate-1 backdrop-blur-sm">
+                                    {/* Decorative corners */}
+                                    <div className="absolute -top-1 -left-1 w-3 h-3 border-t-2 border-l-2 border-white/30"></div>
+                                    <div className="absolute -bottom-1 -right-1 w-3 h-3 border-b-2 border-r-2 border-white/30"></div>
 
-                            <h3 className={`font-graffiti text-2xl leading-none uppercase tracking-wide truncate ${style.text} drop-shadow-md`}>
-                                {newItem.name || "Sin Nombre"}
-                            </h3>
+                                    <p className={`text-sm font-graffiti leading-loose text-white/90 drop-shadow-md ${newItem.description ? '' : 'italic opacity-50'}`}>
+                                        "{newItem.description || "La leyenda de este artefacto aún no ha sido escrita..."}"
+                                    </p>
+                                </div>
 
-                            <div className="w-10 h-1 bg-white/20 rounded-full my-1"></div>
-
-                            <p className="text-[11px] text-gray-400 line-clamp-3 leading-relaxed font-urban">
-                                {newItem.description || "La descripción aparecerá aquí..."}
-                            </p>
-
-                            <div className="mt-3 flex items-center justify-between pt-3 border-t border-white/10">
-                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider bg-white/5 px-2 py-1 rounded">
-                                    {newItem.type}
-                                </span>
-                                <div className="flex items-center gap-1 font-mono font-bold text-yellow-400 text-sm bg-yellow-400/10 px-2 py-1 rounded-lg border border-yellow-400/20">
-                                    <span>{newItem.price}</span>
-                                    <span>🪙</span>
+                                <div className="mt-8 text-[10px] text-gray-500 flex items-center gap-1">
+                                    <RotateCw size={10} /> Click para volver
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Audio Indicator Badge */}
-                        {newItem.audio_url && (
-                            <div className="absolute top-4 left-4 p-2 bg-black/60 backdrop-blur-md rounded-full text-[#c0ff00] border border-[#c0ff00]/30 shadow-lg z-20 animate-pulse">
-                                <Music size={14} />
-                            </div>
-                        )}
+                        </div>
                     </div>
                 </div>
             </div>
+
+            <style jsx global>{`
+                .perspective-1000 { perspective: 1000px; }
+                .transform-style-3d { transform-style: preserve-3d; }
+                .backface-hidden { backface-visibility: hidden; }
+                .rotate-y-180 { transform: rotateY(180deg); }
+                .animate-spin-slow { animation: spin 8s linear infinite; }
+            `}</style>
 
         </div>
     );
