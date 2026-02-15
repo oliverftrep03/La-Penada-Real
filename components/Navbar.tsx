@@ -20,22 +20,28 @@ export default function Navbar() {
 
     return (
         <nav className="fixed bottom-0 left-0 right-0 p-4 z-50 pointer-events-none flex justify-center">
-            <div className="glass-panel p-2 flex items-center gap-2 pointer-events-auto shadow-2xl max-w-sm w-full justify-between">
+            <div className="bg-metal p-2 flex items-center gap-2 pointer-events-auto shadow-[0_0_20px_rgba(0,0,0,0.5)] max-w-sm w-full justify-between rounded-lg border-2 border-[#444] relative overflow-hidden">
+                {/* Screw Heads Decoration */}
+                <div className="absolute top-1 left-1 w-2 h-2 rounded-full bg-gray-400 shadow-inner border border-gray-600"></div>
+                <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-gray-400 shadow-inner border border-gray-600"></div>
+                <div className="absolute bottom-1 left-1 w-2 h-2 rounded-full bg-gray-400 shadow-inner border border-gray-600"></div>
+                <div className="absolute bottom-1 right-1 w-2 h-2 rounded-full bg-gray-400 shadow-inner border border-gray-600"></div>
+
                 {navItems.map((item) => {
                     const isActive = pathname === item.href;
                     const Icon = item.icon;
 
                     return (
-                        <Link key={item.href} href={item.href}>
+                        <Link key={item.href} href={item.href} className="relative z-10">
                             <motion.div
-                                className={`relative flex flex-col items-center justify-center p-2 rounded-xl transition-colors ${isActive ? "bg-white/10" : "hover:bg-white/5"}`}
+                                className={`relative flex flex-col items-center justify-center p-2 rounded-lg transition-colors ${isActive ? "bg-black/40 shadow-inner" : "hover:bg-white/5"}`}
                                 whileTap={{ scale: 0.9 }}
                             >
-                                <Icon className={`w-6 h-6 ${item.color} ${isActive ? "fill-current" : ""}`} strokeWidth={2.5} />
+                                <Icon className={`w-6 h-6 ${item.color} ${isActive ? "filter drop-shadow-[0_0_5px_currentColor]" : "opacity-70 grayscale"}`} strokeWidth={2.5} />
                                 {isActive && (
                                     <motion.div
                                         layoutId="active-dot"
-                                        className={`absolute -bottom-1 w-1 h-1 rounded-full bg-white`}
+                                        className={`absolute -bottom-1 w-1 h-1 rounded-full ${item.color.replace('text-', 'bg-')} shadow-[0_0_5px_currentColor]`}
                                     />
                                 )}
                             </motion.div>

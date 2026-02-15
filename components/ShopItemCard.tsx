@@ -209,8 +209,8 @@ export default function ShopItemCard({ item, owned = false, onBuy, isPreview = f
                         )}
 
                         {/* Front Footer (Name + Stats + Buy) */}
-                        <div className="w-full bg-black/80 backdrop-blur-xl p-3 flex flex-col gap-2 border-t border-white/10 relative z-20">
-                            <h3 className={`font-graffiti text-base leading-none uppercase tracking-wide truncate ${style.text} drop-shadow-md text-center`}>
+                        <div className="w-full bg-black/80 backdrop-blur-xl p-3 flex flex-col gap-2 border-t border-white/10 relative z-20 min-h-[90px] justify-between">
+                            <h3 className={`font-graffiti text-sm leading-tight uppercase tracking-wide line-clamp-2 ${style.text} drop-shadow-md text-center h-8 flex items-center justify-center`}>
                                 {item.name || "Sin Nombre"}
                             </h3>
 

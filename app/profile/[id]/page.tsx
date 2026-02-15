@@ -121,24 +121,21 @@ export default function PublicProfilePage() {
                 </button>
             </div>
 
-            {/* Cover */}
-            <div className="h-40 w-full bg-gradient-to-r from-[#c0ff00]/20 via-[#c0ff00]/5 to-black relative">
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-30"></div>
+            {/* Cover - STITCH STYLE (Subway/Tunnel) */}
+            <div className="h-48 w-full relative overflow-hidden">
+                <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1517177573693-51829373ea7b?q=80&w=2670&auto=format&fit=crop')] bg-cover bg-center grayscale opacity-60"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
             </div>
 
             {/* Profile Info */}
             <div className="px-5 -mt-16 flex flex-col gap-4">
 
-                {/* Avatar Badge */}
-                <div className="relative self-start">
-                    <div className="w-32 h-32 rounded-full border-4 border-black bg-gray-800 relative z-10 overflow-hidden shadow-[0_0_20px_rgba(192,255,0,0.3)]">
+                {/* Avatar Badge - STITCH STYLE (Slime) */}
+                <div className="relative self-start -mt-2">
+                    <div className="w-32 h-32 rounded-full bg-gray-800 relative z-10 overflow-hidden slime-border">
                         {profile?.avatar_url && (
                             <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
                         )}
-                    </div>
-                    {/* Level Badge */}
-                    <div className="absolute -top-2 -right-8 bg-red-600 text-white font-bold px-3 py-1 text-xs rounded-full border-2 border-black rotate-12 z-0">
-                        Nivel {profile?.level}
                     </div>
                 </div>
 
@@ -151,20 +148,20 @@ export default function PublicProfilePage() {
                     <p className="text-gray-400 text-sm mt-1 max-w-xs">{profile?.description}</p>
                 </div>
 
-                {/* XP Bar (Read Only) */}
-                <div className="mt-4 bg-[#1a1a1a] p-4 rounded-xl border border-white/5 relative overflow-hidden">
-                    <div className="flex justify-between items-end mb-2">
-                        <span className="text-sm font-bold text-white">Nivel {profile?.level || 1}</span>
-                        <span className="text-xs text-gray-400 font-mono">
+                {/* XP Bar (Read Only) - STITCH STYLE (Metal) */}
+                <div className="mt-4 bg-metal p-4 rounded-lg relative overflow-hidden shadow-lg border-2 border-gray-600">
+                    <div className="flex justify-between items-end mb-2 relative z-10">
+                        <span className="text-xl font-graffiti text-white drop-shadow-md">Nivel {profile?.level || 1}</span>
+                        <span className="text-xs text-black font-bold font-mono bg-[#c0ff00] px-2 py-0.5 rounded-sm">
                             {profile?.xp || 0} / {getXpRequirement(profile?.level || 1)} XP
                         </span>
                     </div>
-                    <div className="h-4 bg-black rounded-full overflow-hidden border border-white/10 relative">
+                    <div className="h-6 bg-black/50 rounded-sm overflow-hidden border border-white/20 relative shadow-inner">
                         <div
-                            className="h-full bg-gradient-to-r from-[#c0ff00] to-green-400"
+                            className="h-full bg-gradient-to-r from-[#c0ff00] to-green-500 shadow-[0_0_10px_#c0ff00]"
                             style={{ width: `${Math.min(100, ((profile?.xp || 0) / getXpRequirement(profile?.level || 1)) * 100)}%` }}
                         ></div>
-                        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/diagmonds-light.png')] opacity-30"></div>
+                        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/diagmonds-light.png')] opacity-20"></div>
                     </div>
                 </div>
 
@@ -218,10 +215,10 @@ export default function PublicProfilePage() {
                                 <div
                                     key={trophy.id}
                                     onClick={() => setSelectedTrophy(trophy)}
-                                    className={`aspect-square rounded-lg border flex items-center justify-center relative group cursor-pointer transition-transform hover:scale-105 ${unlocked ? 'bg-yellow-500/10 border-yellow-500/50' : 'bg-white/5 border-white/10 grayscale opacity-50'}`}
+                                    className={`aspect-[3/4] rounded-sm flex items-center justify-center relative group cursor-pointer transition-transform hover:scale-110 metal-plate ${unlocked ? '' : 'grayscale opacity-70'}`}
                                 >
-                                    <span className="text-2xl">{trophy.icon}</span>
-                                    {unlocked && <div className="absolute inset-0 bg-yellow-500/20 blur-xl"></div>}
+                                    <span className="text-2xl drop-shadow-md">{trophy.icon}</span>
+                                    {!unlocked && <div className="absolute inset-0 bg-black/50 overflow-hidden flex items-center justify-center"><div className="w-full h-[1px] bg-white/30 rotate-45 transform scale-150"></div></div>}
                                 </div>
                             );
                         })}
@@ -240,15 +237,16 @@ export default function PublicProfilePage() {
                                 <div
                                     key={achievement.id}
                                     onClick={() => setSelectedTrophy(achievement)}
-                                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-transform hover:scale-[1.02] ${unlocked ? 'bg-purple-500/10 border-purple-500/50' : 'bg-white/5 border-white/10 opacity-50'}`}
+                                    className={`flex items-center gap-3 p-3 rounded-sm cursor-pointer transition-transform hover:scale-[1.02] metal-plate ${unlocked ? 'border-primary/50' : 'grayscale opacity-60'}`}
                                 >
-                                    <div className={`w-10 h-10 rounded flex items-center justify-center text-xl ${unlocked ? 'bg-purple-500/20 text-purple-400' : 'bg-white/10 text-gray-500'}`}>
+                                    <div className={`w-10 h-10 rounded flex items-center justify-center text-xl bg-black/20 shadow-inner`}>
                                         {achievement.icon}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <div className={`font-bold text-sm truncate ${unlocked ? 'text-white' : 'text-gray-500'}`}>{achievement.name}</div>
+                                        <div className={`font-bold font-urban text-sm truncate ${unlocked ? 'text-black' : 'text-gray-600'}`}>{achievement.name}</div>
                                         <div className="text-xs text-gray-500 truncate">{achievement.description}</div>
                                     </div>
+                                    {unlocked && <div className="text-xs font-bold text-green-600">✓</div>}
                                 </div>
                             );
                         })}
